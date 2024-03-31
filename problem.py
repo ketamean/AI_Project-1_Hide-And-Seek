@@ -80,7 +80,7 @@ class Problem:
                     )
                 )
 
-    def __init__(self, input_filename: str, goal_checker: function, allow_move_obstacles: bool) -> None:
+    def __init__(self, input_filename: str, allow_move_obstacles: bool) -> None:
         """
             input_filename: the file that contains the initial map. The file must be in the correct format
                 - The first line includes 2 positive integers N M (separated by a single space). The first number is number of rows, while the second one is number of columns
