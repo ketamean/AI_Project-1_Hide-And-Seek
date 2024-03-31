@@ -1,3 +1,6 @@
+"""
+    this file includes Hider class and Seeker class
+"""
 class Hider:
     """
         each instance of the class represents a hider.
@@ -9,11 +12,9 @@ class Hider:
         hider keeps a skelaton version of the map, which is the map in the pov of the hider (already known walls)
     """
     _cnt = 0        # count for ID
-    _radius = 3     # field of view
-    def __init__(self, coordinate: tuple) -> None:
+    def __init__(self, coordinate: tuple, radius = 3) -> None:
         """
             coordinate: tuple (id_row, id_col) of the hider in the above map
-            skelaton_map: skelaton version of the map (2d array), including numbers only (no object)
             id of the hider will be automatically calculated when it was initialized. When you reset the game, you need to reset the id counter (which is a static attribute) Hider._cnt using the static method Hider.reset_id_counter()
         """
         from copy import deepcopy
@@ -21,11 +22,8 @@ class Hider:
         self.id = Hider._cnt            # id of the hider to differentiate hiders
         self.coordinate = coordinate    
         self.signature = 'Hider'
-        #self.map = deepcopy(skelaton_map)
-            # -1: wall
-            # this Hider instance: current pos
-            # other Hider instances and Seeker instance: other agents
-            # non-negative integers: empty cells
+        self.radius = radius            # field of view
+
     
     @staticmethod
     def reset_id_counter():
@@ -89,16 +87,14 @@ class Seeker:
 
         seeker keeps a skelaton version of the map, which is the map in the pov of the seeker (already known walls)
     """
-    _radius = 3     # field of view
-    def __init__(self, coordinate: tuple) -> None:
+    def __init__(self, coordinate: tuple, radius = 3) -> None:
         """
             coordinate: tuple (id_row, id_col) of the hider in the map
-            skelaton_map: skelaton version of the map (2d array), including numbers only (-1 for walls, 1000 for empty cells)
         """
         self.coordinate = coordinate
         self.signature = 'Seeker'
-        self.score = 0      # score of the seeker, initially 0
-        #self.map = skelaton_map
+        self.score = 0                  # score of the seeker, initially 0
+        self.radius = radius            # field of view
 
 
     def action(self, map: list):
