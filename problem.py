@@ -107,6 +107,12 @@ class Problem:
         if allow_move_obstacles:
             # let hiders move obstacles
             self.map_list = Hider.move_obstacles(map=self.map_list, obstacles=self.obstacles)
+        else:
+            # not allowed to move obstacles => all obstacles are instantly set to walls
+            for obstacle in self.obstacles:
+                for i in range(obstacle.id_row_topleft, obstacle.id_row_botright + 1):
+                    for j in range(obstacle.id_col_topleft, obstacle.id_col_botright + 1):
+                        self.map_list[i][j] = -1
 
         # now the map is static
         # assign Hider and Seeker objects to the map
