@@ -10,6 +10,9 @@ class Problem:
             - Announcement objects: announcement of a hider, signature = 'Announcement'
             - non-negative INTEGERS: heuristic values (initially extremely large, 1000), represent blank cells
 
+            If there are multiple components in a cell (multiple Hiders, or wall + announcement), they will be combined to be in a list
+            A cell which is a wall is either -1 or list of [-1, Announcement-object]
+
         e.g.,
         (
             (-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1),
