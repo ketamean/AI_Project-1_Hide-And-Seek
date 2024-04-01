@@ -12,7 +12,7 @@ class Hider:
         hider keeps a skelaton version of the map, which is the map in the pov of the hider (already known walls)
     """
     _cnt = 0        # count for ID
-    def __init__(self, coordinate: tuple, radius = 3) -> None:
+    def __init__(self, coordinate: tuple, radius = 3, step_to_announcement = 5) -> None:
         """
             coordinate: tuple (id_row, id_col) of the hider in the above map
             id of the hider will be automatically calculated when it was initialized. When you reset the game, you need to reset the id counter (which is a static attribute) Hider._cnt using the static method Hider.reset_id_counter()
@@ -23,7 +23,8 @@ class Hider:
         self.coordinate = coordinate    
         self.signature = 'Hider'
         self.radius = radius            # field of view
-
+        self.step_to_announcement = step_to_announcement        # number of steps between 2 announcements           
+        self.count_to_announcement = self.step_to_announcement  # if == 0, raise an announcement reset to step_to_announcement 
     
     @staticmethod
     def reset_id_counter():
@@ -65,6 +66,12 @@ class Hider:
         """
         pass
 
+    def result(self, action: str, map: list):
+        """
+
+        """
+        pass
+    
 class Announcement:
     """
         an announcement raised by a hider
