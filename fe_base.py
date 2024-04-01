@@ -47,11 +47,11 @@ def main():
     fogOfWar = rl.load_render_texture(map.tilesX, map.tilesY)
     rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR)
 
-    rl.set_target_fps(60)
+    rl.set_target_fps(60) # Change this to 30 if you want to see the effect more clearly
 
     while not rl.window_should_close():
         if rl.is_key_down(rl.KEY_RIGHT):
-            playerPosition.x += 9
+            playerPosition.x += 9 # 9 because we want to move 1 tile at a time
         if rl.is_key_down(rl.KEY_LEFT):
             playerPosition.x -= 9
         if rl.is_key_down(rl.KEY_DOWN):
