@@ -11,6 +11,8 @@ PLAYER_TILE_VISIBILITY = 3 # Tiles around player that will be visible
 #----------------MAP STRUCTURES----------------
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
+MAP_TILE_X = 40
+MAP_TILE_Y = 40
 
 # map: the map read from the input file
 #    -1: wall
@@ -34,10 +36,8 @@ def main():
     rl.init_window(screenWidth, screenHeight, "raylib [textures] example - fog of war")
 
     map = Map()
-    map.addWall()
-# Initialize the map with random values
-    map.tilesX = 40
-    map.tilesY = 40
+    map.tilesX = MAP_TILE_X
+    map.tilesY = MAP_TILE_Y
 
     #NOTE: We can have up to 256 values for tile ids and for tile fog state,
     #probably we don't need that many values for fog state, it can be optimized
