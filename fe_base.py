@@ -1,9 +1,24 @@
 import pyray as rl
 import random
+from obstacle import *
+from player import *
 
-MAP_TILE_SIZE = 32
-PLAYER_SIZE = 16
-PLAYER_TILE_VISIBILITY = 3
+#-------------------ELEMENTS-------------------
+MAP_TILE_SIZE = 20
+PLAYER_SIZE = 20
+PLAYER_TILE_VISIBILITY = 3 # Tiles around player that will be visible
+
+#----------------MAP STRUCTURES----------------
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 800
+
+# map: the map read from the input file
+#    -1: wall
+#    2: hider
+#    3: seeker
+#    1000: an empty cell
+#    obstacles: a list of Obstacle objects in the above map
+
 
 class Map:
     def __init__(self):
@@ -11,21 +26,18 @@ class Map:
         self.tilesY = 0
         self.tileIds = None
         self.tileFog = None
-        
-    def create_Wall(self):
-        for i in range(self.tilesY * self.tilesX):
-            self.tileIds[i] = random.randint(0, 1)
 
 def main():
-    screenWidth = 650
-    screenHeight = 650
+    screenWidth = SCREEN_WIDTH
+    screenHeight = SCREEN_HEIGHT
 
     rl.init_window(screenWidth, screenHeight, "raylib [textures] example - fog of war")
 
     map = Map()
-    map.create_Wall()
-    map.tilesX = 20
-    map.tilesY = 20
+    map.addWall()
+# Initialize the map with random values
+    map.tilesX = 40
+    map.tilesY = 40
 
     #NOTE: We can have up to 256 values for tile ids and for tile fog state,
     #probably we don't need that many values for fog state, it can be optimized
@@ -40,24 +52,26 @@ def main():
     for i in range(map.tilesY * map.tilesX):
         map.tileIds[i] = random.randint(0, 1)
 
+# Player position in the map (default tile: 0,0)
     playerPosition = rl.Vector2(0,0)
     playerTileX = 0
     playerTileY = 0
 
+# Create a render texture to store the fog of war
     fogOfWar = rl.load_render_texture(map.tilesX, map.tilesY)
-    rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR)
+    rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR) # Texture scale filter to use
 
     rl.set_target_fps(60) # Change this to 30 if you want to see the effect more clearly
 
     while not rl.window_should_close():
-        if rl.is_key_down(rl.KEY_RIGHT):
-            playerPosition.x += 9 # 9 because we want to move 1 tile at a time
-        if rl.is_key_down(rl.KEY_LEFT):
-            playerPosition.x -= 9
-        if rl.is_key_down(rl.KEY_DOWN):
-            playerPosition.y += 9
-        if rl.is_key_down(rl.KEY_UP):
-            playerPosition.y -= 9
+        if rl.is_key_pressed(rl.KEY_RIGHT):
+            playerPosition.x += MAP_TILE_SIZE # Move player position by one tile (32 units)
+        if rl.is_key_pressed(rl.KEY_LEFT):
+            playerPosition.x -= MAP_TILE_SIZE
+        if rl.is_key_pressed(rl.KEY_DOWN):
+            playerPosition.y += MAP_TILE_SIZE
+        if rl.is_key_pressed(rl.KEY_UP):
+            playerPosition.y -= MAP_TILE_SIZE
 
         if playerPosition.x < 0:
             playerPosition.x = 0
