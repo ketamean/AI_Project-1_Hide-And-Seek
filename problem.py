@@ -123,6 +123,9 @@ class Problem:
             hider = Hider(coordinate=(r,c))
             self.hiders.append( hider )
             self.map_list[r][c] = hider
+        
+        del self.seeker_coor
+        del self.hiders_coor
 
     def action(self, player: Hider | Seeker):
         """
