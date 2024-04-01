@@ -1,7 +1,54 @@
 """
     this file includes Hider class and Seeker class
 """
-class Hider:
+from state import *
+# abstract method
+class Player:
+    def __init__(self, coordinate: tuple, radius: int, h: function) -> None:
+        self.coordinate = coordinate    
+        self.signature = 'Hider'
+        self.radius = radius            # field of view
+        self.latest_states = []         # list of some latest (or all) State object
+
+    def result(self, origin_state: State, action: str, map: list):
+        """
+            change the map according to the given action
+            returns the new map
+        """
+        cur_r, cur_c = self.coordinate
+        
+        # get current cummulative path cost
+
+        if action == 'U':
+            new_r, new_c = cur_r - 1, cur_c
+        elif action == 'D':
+            new_r, new_c = cur_r + 1, cur_c
+        elif action == 'L':
+            new_r, new_c = cur_r, cur_c - 1
+        elif action == 'R':
+            new_r, new_c = cur_r, cur_c + 1
+        elif action == 'UL':
+            new_r, new_c = cur_r - 1, cur_c - 1
+        elif action == 'UR':
+            new_r, new_c = cur_r - 1, cur_c + 1
+        elif action == 'DL':
+            new_r, new_c = cur_r + 1, cur_c - 1
+        elif action == 'DR':
+            new_r, new_c = cur_r + 1, cur_c + 1
+        else:
+            raise ValueError("Wrong action was given!")
+        new_g = origin_state.g + 1
+        new_h = 
+        self.latest_states.append(
+            State(
+                coordinate_from=(cur_r, cur_c),
+                coordinate_to=(new_r, new_c),
+                g= new_g,
+                h= new_h,
+                f= new_g + new_h
+            )
+        )
+class Hider(Player):
     """
         each instance of the class represents a hider.
 
@@ -18,13 +65,11 @@ class Hider:
             id of the hider will be automatically calculated when it was initialized. When you reset the game, you need to reset the id counter (which is a static attribute) Hider._cnt using the static method Hider.reset_id_counter()
         """
         from copy import deepcopy
+        super().__init__(coordinate=coordinate, radius=radius)
         Hider._cnt += 1
         self.id = Hider._cnt            # id of the hider to differentiate hiders
-        self.coordinate = coordinate    
-        self.signature = 'Hider'
-        self.radius = radius            # field of view
         self.step_to_announcement = step_to_announcement        # number of steps between 2 announcements           
-        self.count_to_announcement = self.step_to_announcement  # if == 0, raise an announcement reset to step_to_announcement 
+        self.count_to_announcement = self.step_to_announcement  # if == 0, raise an announcement reset to step_to_announcement
     
     @staticmethod
     def reset_id_counter():
@@ -66,7 +111,7 @@ class Hider:
         """
         pass
 
-    def result(self, action: str, map: list):
+    def result(self, origin_state: State, action: str, map: list):
         """
 
         """
@@ -84,7 +129,7 @@ class Announcement:
         self.coordinate = coordinate
         self.hider = hider
 
-class Seeker:
+class Seeker(Player):
     """
         each instance of the class represents the seeker
 
@@ -98,11 +143,9 @@ class Seeker:
         """
             coordinate: tuple (id_row, id_col) of the hider in the map
         """
-        self.coordinate = coordinate
+        super().__init__(coordinate=coordinate, radius=radius)
         self.signature = 'Seeker'
         self.score = 0                  # score of the seeker, initially 0
-        self.radius = radius            # field of view
-
 
     def action(self, map: list):
         """
@@ -112,3 +155,13 @@ class Seeker:
                 'UL' (up left), 'UR' (up right), 'DL' (down left), 'DR' (down right)
         """
         pass
+
+    def result(self, origin_state: State, action: str, map: list):
+        """
+            change the map according to the given action
+
+            then coordinate and score of the Seeker will be changed; a new state will be added to the list of states
+
+            returns the new map
+        """
+        map = super().result(origin_state=origin_state, action=action, map=map)

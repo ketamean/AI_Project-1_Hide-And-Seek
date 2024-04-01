@@ -138,9 +138,11 @@ class Problem:
         """
         pass
     
-    def result(self, action: str, player: Hider | Seeker):
+    def result(self, origin_state: State, action: str, player: Hider | Seeker, h: function):
         """
-            applying the given action to the current map on the player
+            applying the given action to the origin state
+
+            arg h: a function to calculate heuristic value at the current level, given by developers
 
             change both map of the current instance problem and the map in pov of the player
         """
