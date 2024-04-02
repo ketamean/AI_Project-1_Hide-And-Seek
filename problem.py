@@ -10,6 +10,9 @@ class Problem:
             - Announcement objects: announcement of a hider, signature = 'Announcement'
             - non-negative INTEGERS: heuristic values (initially extremely large, 1000), represent blank cells
 
+            If there are multiple components in a cell (multiple Hiders, or wall + announcement), they will be combined to be in a list
+            A cell which is a wall is either -1 or list of [-1, Announcement-object]
+
         e.g.,
         (
             (-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1),
@@ -55,30 +58,20 @@ class Problem:
 
         # list of coordinates of obstacles
         self.obstacles = []
-        groups = lines[-1].split(' ')
+        groups = lines[1 + nrow].split(' ')
         cnt = 0
         r_topleft = 0
         c_topleft = 0
         r_botright = 0
         c_botright = 0
-        for num in groups:
-            if cnt == 0:
-                r_topleft = num
-            elif cnt == 1:
-                c_topleft = num
-            elif cnt == 2 :
-                r_botright = num
-            elif cnt == 3:
-                c_botright = num
-            cnt += 1
-            if cnt == 4:
-                cnt = 0
-                self.obstacles.append(
-                    Obstacle(
-                        r_topleft, c_topleft,
-                        r_botright, c_botright
-                    )
+        for row in lines[1 + nrow::]:
+            r_topleft, c_topleft, r_botright, c_botright = row
+            self.obstacles.append(
+                Obstacle(
+                    r_topleft, c_topleft,
+                    r_botright, c_botright
                 )
+            )
 
     def __init__(self, input_filename: str, allow_move_obstacles: bool) -> None:
         """
