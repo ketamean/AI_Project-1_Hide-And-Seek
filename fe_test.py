@@ -34,7 +34,7 @@ class Paddle:
     def draw(self):
         rl.draw_rectangle(self.x, self.y, self.width, self.height, rl.WHITE)
 
-    def validate_xy(self):
+    def validate_xy(self): 
         self.y = max(self.y, 0)
         self.y = min(self.y, screen_height - self.height)
 
