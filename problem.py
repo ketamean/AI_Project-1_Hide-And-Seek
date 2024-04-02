@@ -78,7 +78,7 @@ class Problem:
             input_filename: the file that contains the initial map. The file must be in the correct format
                 - The first line includes 2 positive integers N M (separated by a single space). The first number is number of rows, while the second one is number of columns
                 - The next N lines is the map, each of which contains M integers. These integers are also separated by single spaces
-                - The last line includes 4*k non-negative integers (separated by single spaces), divided into k groups, each of which in the format (id_row_topleft, id_col_topleft, id_row_bottomright, id_col_bottomright)
+                - The last lines includes 4*k non-negative integers (separated by single spaces), divided into k groups, each of which in the format (id_row_topleft, id_col_topleft, id_row_bottomright, id_col_bottomright)
             goal_checker: a function f(State) that returns True if the given state is the goal state; otherwise, returns False
         """
         """
