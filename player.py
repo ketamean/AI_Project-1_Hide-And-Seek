@@ -562,13 +562,10 @@ class State:
         this is an auxiliary class for BE (solving problem in levels).
         for each player object (Hider or Seeker), there is a list that contains all the states (or optimally N latest state)
     """
-    def __init__(self, coordinate_from: tuple, coordinate_to: tuple, player: Player, g:int, h: int, f: int) -> None:
+    def __init__(self, coordinate_from: tuple, coordinate_to: tuple, player: Player) -> None:
         self.from_row, self.from_col = coordinate_from
         self.to_row, self.to_col = coordinate_to
         self.player = player
-        self.g = g
-        self.h = h
-        self.f = f
 
 class Hider(Player):
     """
