@@ -550,6 +550,9 @@ class Player:
         self.__vision_botleft_quarter()
         self.__vision_botright_quarter()
 
+        r,c = self.coordinate
+        self.vision_map[r][c] = True
+
 class State:
     """
         each state keeps the coordinate of a particular cell in the map, g, h, f (where h = Manhattan distance heuristic, g = cummulative path cost, f = g + h)
@@ -565,7 +568,7 @@ class State:
         self.player = player
         self.g = g
         self.h = h
-        self.f = f if f else self.g + self.h
+        self.f = f
 
 class Hider(Player):
     """
