@@ -7,10 +7,10 @@ PLAYER_SIZE = 20
 PLAYER_TILE_VISIBILITY = 3 # Tiles around player that will be visible
 
 #----------------MAP STRUCTURES----------------
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 800
-MAP_TILE_X = 40
-MAP_TILE_Y = 40
+MAP_TILE_X = 15
+MAP_TILE_Y = 20
+SCREEN_WIDTH = MAP_TILE_SIZE * MAP_TILE_X
+SCREEN_HEIGHT = MAP_TILE_SIZE * MAP_TILE_Y
 
 class Map:
     def __init__(self):
@@ -25,19 +25,12 @@ class Map:
                 # Draw map tiles (depending on tile id)
                 rl.draw_rectangle(x * MAP_TILE_SIZE, y * MAP_TILE_SIZE, MAP_TILE_SIZE, MAP_TILE_SIZE,
                                   rl.BLUE if self.tileIds[y * self.tilesX + x] == 0 # Default tile
-                                  else rl.BLACK if self.tileIds[y * self.tilesX + x] == 2 # Obstacle
+                                  else rl.BLACK if self.tileIds[y * self.tilesX + x] == 2 # Wall(s)
                                   else rl.GREEN if self.tileIds[y * self.tilesX + x] == 3 # Hider(s)
                                   else rl.fade(rl.BLUE, 0.9)) # Default tile (but faded for asthetics)
                 # Draw grid
                 rl.draw_rectangle_lines(x * MAP_TILE_SIZE, y * MAP_TILE_SIZE, MAP_TILE_SIZE, MAP_TILE_SIZE,
                                          rl.fade(rl.DARKBLUE, 0.5))
-               
-    def load_map(self, file_path):
-        pass 
-    # map: the map read from the input file
-    #    2: hider 
-    #    1000: an empty cell 
-    #    obstacles: a list of Obstacle objects in the above map 
     
 class Obstacle:
     def __init__(self, id_r_topleft, id_c_topleft, id_r_botright, id_c_botright) -> None:
@@ -49,9 +42,13 @@ class Obstacle:
 @staticmethod
 class Seeker:
     def __init__(self, x, y):
-        self.position = rl.Vector2(x, y)
-        self.tileX = 0
-        self.tileY = 0
+        # x and y are the pixel coordinates of the seeker (ex: tile 2,2 -> x=40, y=40)
+        # Convert pixel coordinates to tile coordinates
+        tilex = x * MAP_TILE_SIZE
+        tiley = y * MAP_TILE_SIZE
+        self.position = rl.Vector2(tilex, tiley)
+        self.tileX = x
+        self.tileY = y
 
     def move(self, dx, dy, map: Map):
         self.position.x += dx
@@ -86,12 +83,6 @@ def main():
     map = Map()
     map.tilesX = MAP_TILE_X
     map.tilesY = MAP_TILE_Y
-    
-    # NOTE: We can have up to 256 values for tile ids and for tile fog state,
-    # probably we don't need that many values for fog state, it can be optimized
-    # to use only 2 bits per fog state (reducing size by 4) but logic will be a bit more complex
-    # map.tileIds = (unsigned char *)calloc(map.tilesX*map.tilesY, sizeof(unsigned char));
-    # map.tileFog = (unsigned char *)calloc(map.tilesX*map.tilesY, sizeof(unsigned char));    
 
     # Opt for a list of 0s instead of calloc
     map.tileIds = [0] * (map.tilesX * map.tilesY)
@@ -99,15 +90,12 @@ def main():
 
     # NOTE: Map tile ids should be probably loaded from an external map file (by defination: 0: empty, 1: obstacle (static), 2: hider (static))    
     # Load map tiles (generating 2 random tile ids for testing)
-    for i in range(map.tilesY * map.tilesX):
-        map.tileIds[i] = random.randint(0, 2)
+    # for i in range(map.tilesY * map.tilesX):
+    #    map.tileIds[i] = random.randint(0, 2)
     
-        
-    # Seeker position in the map (default tile: 0,0)    
-    seeker = Seeker(0, 0)
-    hider1 = Hider(random.randint(0, 800), random.randint(0, 800))
-    hider2 = Hider(random.randint(0, 800), random.randint(0, 800))
-
+    # Seeker position in the map (default tile: 0,0)   
+    seeker = Seeker(3, 3)
+    
     # Create a render texture to store the fog of war
     fogOfWar = rl.load_render_texture(map.tilesX, map.tilesY)
     rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR)
@@ -115,7 +103,7 @@ def main():
     rl.set_target_fps(30)
 
     while not rl.window_should_close():    
-        #--------USER CONTROL MOVEMENT--------
+        #--------USER CONTROL MOVEMENT (ONLY FOR DEBUGGING) --------
         user_control = True
         if user_control:
             if rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_DOWN):
@@ -184,10 +172,7 @@ def main():
                             rl.Vector2(0, 0), 0.0, rl.WHITE)
         
         # Write current player position tile
-        rl.draw_text(f"Current tile: [{seeker.tileX},{seeker.tileY}]", 10, 10, 20, rl.RAYWHITE)   
-        
-        hider1.draw()
-        hider2.draw()        
+        rl.draw_text(f"Current tile: [{seeker.tileX},{seeker.tileY}]", 10, 10, 20, rl.RAYWHITE)         
         
         if user_control:
             rl.draw_text("ARROW KEYS to move", 10, screenHeight - 25, 20, rl.RAYWHITE)
