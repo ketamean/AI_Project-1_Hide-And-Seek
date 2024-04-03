@@ -1,5 +1,6 @@
 import pyray as rl
 import random
+import fe_menu
 
 #-------------------ELEMENTS-------------------
 MAP_TILE_SIZE = 20
@@ -80,6 +81,7 @@ def main():
 
     rl.init_window(screenWidth, screenHeight, "Hide and Seek")
 
+    rl.set_target_fps(30)
     map = Map()
     map.tilesX = MAP_TILE_X
     map.tilesY = MAP_TILE_Y
@@ -185,4 +187,6 @@ def main():
     rl.close_window()
 
 if __name__ == "__main__":
+    # Menu
+    fe_menu.main_menu()
     main()
