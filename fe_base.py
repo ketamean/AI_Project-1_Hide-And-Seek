@@ -112,7 +112,7 @@ def main():
     fogOfWar = rl.load_render_texture(map.tilesX, map.tilesY)
     rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR)
 
-    #rl.set_target_fps(60)
+    rl.set_target_fps(30)
 
     while not rl.window_should_close():    
         #--------USER CONTROL MOVEMENT--------
