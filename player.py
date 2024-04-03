@@ -89,7 +89,7 @@ class Player:
         # traverse the right half of the column of player
         flag_meetwall = False
         for idcol in range(c + 1, c + self.radius + 1, + 1):
-            if idcol >= len(self.origin_map):
+            if idcol >= len(self.origin_map[0]):
                 break
             if flag_meetwall:
                 self.vision_map[r][idcol] == False
@@ -180,20 +180,20 @@ class Player:
             if idrow >= len(self.origin_map):
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c + idrow-r] == False
+                self.vision_map[idrow][c - r+idrow] == False
                 continue
             
-            if -1 in self.origin_map[idrow][c + idrow-r]:
+            if -1 in self.origin_map[idrow][c - r+idrow]:
                 flag_meetwall = True
-                self.vision_map[idrow][c + idrow-r] == False
-                for comp in self.origin_map[idrow][c + idrow-r]:
+                self.vision_map[idrow][c - r+idrow] == False
+                for comp in self.origin_map[idrow][c - r+idrow]:
                     if isinstance(comp, int):
                         continue
                     if comp.signature == 'Announcement':
-                        self.vision_map[idrow][c + idrow-r] == True
+                        self.vision_map[idrow][c - r+idrow] == True
                         break
             else:
-                self.vision_map[idrow][c + idrow-r] == True
+                self.vision_map[idrow][c - r+idrow] == True
 
     def __vision_sub_diagonal(self):
         r,c = self.coordinate
@@ -224,26 +224,26 @@ class Player:
             if idrow >= len(self.origin_map):
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c - idrow+r] == False
+                self.vision_map[idrow][c + r-idrow] == False
                 continue
             
-            if -1 in self.origin_map[idrow][c - idrow+r]:
+            if -1 in self.origin_map[idrow][c + r-idrow]:
                 flag_meetwall = True
-                self.vision_map[idrow][c - idrow+r] == False
-                for comp in self.origin_map[idrow][c - idrow+r]:
+                self.vision_map[idrow][c + r-idrow] == False
+                for comp in self.origin_map[idrow][c + r-idrow]:
                     if isinstance(comp, int):
                         continue
                     if comp.signature == 'Announcement':
-                        self.vision_map[idrow][c - idrow+r] == True
+                        self.vision_map[idrow][c + r-idrow] == True
                         break
             else:
-                self.vision_map[idrow][c - idrow+r] == True
+                self.vision_map[idrow][c + r-idrow] == True
 
-    def __vision_topleft_quater(self):
+    def __vision_topleft_quarter(self):
         r,c = self.coordinate
         # below main diagonal
         # x: horizontal - right to left
-        # y: vertical - down to up
+        # y: vertical - bottom up
         for idcol in range(c - 2, c - self.radius - 1, -1):
             if idcol < 0:
                 break
@@ -261,7 +261,7 @@ class Player:
                 dy = y1
                 D = dy - 0.5*dx
                 meet_wall = False
-                for i in range(self.radius):
+                for i in range(self.radius - 1):
                     if D > 0:
                         x0 += 1
                         y0 += 1
@@ -276,11 +276,12 @@ class Player:
                     elif -1 in self.origin_map[c - x0][r - y0]:
                         # wall
                         meet_wall = True
+                        self.vision_map[c - x0][r - y0] = True
                     else:
                         self.vision_map[c - x0][r - y0] = True
         
         # above main diagonal
-        # x: vertical - down to up
+        # x: vertical - bottom up
         # y: horizontal - right to left
         for idrow in range(r - 2, r - self.radius - 1, -1):
             if idrow < 0:
@@ -314,17 +315,249 @@ class Player:
                     elif -1 in self.origin_map[r - x0][c - y0]:
                         # wall
                         meet_wall = True
+                        self.vision_map[r - x0][c - y0] = True
                     else:
                         self.vision_map[r - x0][c - y0] = True
 
-    def __vision_topright_quater(self):
-        pass
+    def __vision_topright_quarter(self):
+        r,c = self.coordinate
+        # below sub diagonal
+        # x: horizontal - left to right
+        # y: vertical - bottom up
+        for idcol in range(c + 2, c + self.radius + 1, +1):
+            if idcol >= len(self.origin_map[0]):
+                break
+            for idrow in range(r - 1, r + c-idcol, -1):
+                if idrow < 0:
+                    break
+                if isinstance(self.vision_map[idrow][idcol], bool):
+                    # already determined
+                    continue
+                x0 = 0
+                y0 = 0
+                x1 = idcol - c
+                y1 = r - idrow
+                dx = x1
+                dy = y1
+                D = dy - 0.5*dx
+                meet_wall = False
+                for i in range(self.radius - 1):
+                    if D > 0:
+                        x0 += 1
+                        y0 += 1
+                        D = dy - dx
+                    else:
+                        x0 += 1
+                        D = dy
+                    if c + x0 >= len(self.origin_map[0]) or r - y0 < 0:
+                        break
+                    if meet_wall:
+                        self.vision_map[c + x0][r - y0] = False
+                    elif -1 in self.origin_map[c + x0][r - y0]:
+                        # wall
+                        meet_wall = True
+                        self.vision_map[c + x0][r - y0] = True
+                    else:
+                        self.vision_map[c + x0][r - y0] = True
+        
+        # above sub diagonal
+        # x: vertical - bottom up
+        # y: horizontal - right to left
+        for idrow in range(r - 2, r - self.radius - 1, -1):
+            if idrow < 0:
+                break
+            for idcol in range(c + 1, c + r-idrow, +1):
+                if idcol < 0:
+                    break
+                if isinstance(self.vision_map[idrow][idcol], bool):
+                    # already determined
+                    continue
+                x0 = 0
+                y0 = 0
+                x1 = r - idrow
+                y1 = idcol - c
+                dx = x1
+                dy = y1
+                D = dy - 0.5*dx
+                meet_wall = False
+                for i in range(self.radius):
+                    if D > 0:
+                        x0 += 1
+                        y0 += 1
+                        D = dy - dx
+                    else:
+                        x0 += 1
+                        D = dy
+                    if r - x0 < 0 or c + y0 >= len(self.origin_map[0]):
+                        break
+                    if meet_wall:
+                        self.vision_map[r - x0][c + y0] = False
+                    elif -1 in self.origin_map[r - x0][c + y0]:
+                        # wall
+                        meet_wall = True
+                        self.vision_map[r - x0][c + y0] = True
+                    else:
+                        self.vision_map[r - x0][c + y0] = True
 
-    def __vision_botleft_quater(self):
-        pass
+    def __vision_botleft_quarter(self):
+        r,c = self.coordinate
+        # above sub diagonal
+        # x: horizontal - right to left
+        # y: vertical - top down
+        for idcol in range(c - 2, c - self.radius - 1, -1):
+            if idcol < 0:
+                break
+            for idrow in range(r + 1, r + c - idcol, +1):
+                if idrow < 0:
+                    break
+                if isinstance(self.vision_map[idrow][idcol], bool):
+                    # already determined
+                    continue
+                x0 = 0
+                y0 = 0
+                x1 = c - idcol
+                y1 = idrow - r
+                dx = x1
+                dy = y1
+                D = dy - 0.5*dx
+                meet_wall = False
+                for i in range(self.radius - 1):
+                    if D > 0:
+                        x0 += 1
+                        y0 += 1
+                        D = dy - dx
+                    else:
+                        x0 += 1
+                        D = dy
+                    if c - x0 < 0 or r + y0 >= len(self.origin_map):
+                        break
+                    if meet_wall:
+                        self.vision_map[c - x0][r + y0] = False
+                    elif -1 in self.origin_map[c - x0][r + y0]:
+                        # wall
+                        meet_wall = True
+                        self.vision_map[c - x0][r + y0] = True
+                    else:
+                        self.vision_map[c - x0][r + y0] = True
+        
+        # below sub diagonal
+        # x: vertical - top down
+        # y: horizontal - right to left
+        for idrow in range(r + 2, r + self.radius + 1, +1):
+            if idrow >= len(self.origin_map):
+                break
+            for idcol in range(c - 1, c + r - idrow, -1):
+                if idcol < 0:
+                    break
+                if isinstance(self.vision_map[idrow][idcol], bool):
+                    # already determined
+                    continue
+                x0 = 0
+                y0 = 0
+                x1 = idrow - r
+                y1 = c - idcol
+                dx = x1
+                dy = y1
+                D = dy - 0.5*dx
+                meet_wall = False
+                for i in range(self.radius):
+                    if D > 0:
+                        x0 += 1
+                        y0 += 1
+                        D = dy - dx
+                    else:
+                        x0 += 1
+                        D = dy
+                    if r + x0 >= len(self.origin_map) or c - y0 < 0:
+                        break
+                    if meet_wall:
+                        self.vision_map[r + x0][c - y0] = False
+                    elif -1 in self.origin_map[r + x0][c - y0]:
+                        # wall
+                        meet_wall = True
+                        self.vision_map[r + x0][c - y0] = True
+                    else:
+                        self.vision_map[r + x0][c - y0] = True
 
-    def __vision_botright_quater(self):
-        pass
+    def __vision_botright_quarter(self):
+        r,c = self.coordinate
+        # above sub diagonal
+        # x: horizontal - left to right
+        # y: vertical - top down
+        for idcol in range(c - 2, c - self.radius - 1, -1):
+            if idcol < 0:
+                break
+            for idrow in range(r + 1, r + c - idcol, +1):
+                if idrow < 0:
+                    break
+                if isinstance(self.vision_map[idrow][idcol], bool):
+                    # already determined
+                    continue
+                x0 = 0
+                y0 = 0
+                x1 = c - idcol
+                y1 = r - idrow
+                dx = x1
+                dy = y1
+                D = dy - 0.5*dx
+                meet_wall = False
+                for i in range(self.radius - 1):
+                    if D > 0:
+                        x0 += 1
+                        y0 += 1
+                        D = dy - dx
+                    else:
+                        x0 += 1
+                        D = dy
+                    if c + x0 >= len(self.origin_map[0]) or r + y0 >= len(self.origin_map):
+                        break
+                    if meet_wall:
+                        self.vision_map[c + x0][r + y0] = False
+                    elif -1 in self.origin_map[c + x0][r + y0]:
+                        # wall
+                        meet_wall = True
+                        self.vision_map[c + x0][r + y0] = True
+                    else:
+                        self.vision_map[c + x0][r + y0] = True
+        
+        # below sub diagonal
+        # x: vertical - top down
+        # y: horizontal - left to right
+        for idrow in range(r + 2, r + self.radius + 1, +1):
+            if idrow >= len(self.origin_map):
+                break
+            for idcol in range(c - 1, c + r - idrow, -1):
+                if idcol < 0:
+                    break
+                if isinstance(self.vision_map[idrow][idcol], bool):
+                    # already determined
+                    continue
+                x0 = 0
+                y0 = 0
+                x1 = idrow - r
+                y1 = idcol - c
+                dx = x1
+                dy = y1
+                D = dy - 0.5*dx
+                meet_wall = False
+                for i in range(self.radius):
+                    if D > 0:
+                        x0 += 1
+                        y0 += 1
+                        D = dy - dx
+                    else:
+                        x0 += 1
+                        D = dy
+                    if r + x0 >= len(self.origin_map) or c + y0 >= len(self.origin_map[0]):
+                        break
+                    if meet_wall:
+                        self.vision_map[r + x0][c + y0] = False
+                    elif -1 in self.origin_map[r + x0][c + y0]:
+                        # wall
+                        meet_wall = True
+                        self.vision_map[r + x0][c + y0] = True
+                    else:
+                        self.vision_map[r + x0][c + y0] = True
 
     def vision(self):
         """
@@ -340,11 +573,11 @@ class Player:
         self.__vision_main_diagonal()
         self.__vision_sub_diagonal()
         
-        # other cells in 4 quaters
-        self.__vision_topleft_quater()
-        self.__vision_topright_quater()
-        self.__vision_botleft_quater()
-        self.__vision_botright_quater()
+        # other cells in 4 quarters
+        self.__vision_topleft_quarter()
+        self.__vision_topright_quarter()
+        self.__vision_botleft_quarter()
+        self.__vision_botright_quarter()
 
 class Hider(Player):
     """
