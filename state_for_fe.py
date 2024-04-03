@@ -10,10 +10,11 @@ class StateForFE:
             args:
                 player: the player object from which we can get the signature, id (if it is a Hider),...
         """
+        from copy import deepcopy
         self.player = player                        # player's signature (Hider or Seeker)
         self.old_coordinate = (old_row, old_col)
         self.new_coordinate = (new_row, new_col)
-
+        self.vision = deepcopy(player.vision_map)
         # add this new state to the list of states
         StateForFE._all_states.append( self )
 
