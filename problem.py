@@ -61,6 +61,8 @@ class Problem:
 
         # list of coordinates of obstacles
         self.obstacles = []
+        if 1 + nrow >= len(lines):
+            return
         groups = lines[1 + nrow].split(' ')
         cnt = 0
         r_topleft = 0
