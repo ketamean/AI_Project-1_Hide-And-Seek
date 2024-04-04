@@ -125,6 +125,10 @@ class Player:
         for idrow in range(r - 1, r - self.radius - 1, -1):
             if idrow < 0:
                 break
+            if c - r+idrow < 0:
+                continue
+            if c - r+idrow >= len(self.origin_map[0]):
+                break
             if flag_meetwall:
                 self.vision_map[idrow][c - r+idrow] = False
                 continue
@@ -137,6 +141,10 @@ class Player:
         flag_meetwall = False
         for idrow in range(r + 1, r + self.radius + 1, + 1):
             if idrow >= len(self.origin_map):
+                break
+            if c - r+idrow < 0:
+                continue
+            if c - r+idrow >= len(self.origin_map[0]):
                 break
             if flag_meetwall:
                 self.vision_map[idrow][c - r+idrow] = False
@@ -153,6 +161,10 @@ class Player:
         for idrow in range(r - 1, r - self.radius - 1, -1):
             if idrow < 0:
                 break
+            if c + r-idrow < 0:
+                break
+            if c + r-idrow >= len(self.origin_map[0]):
+                continue
             if flag_meetwall:
                 self.vision_map[idrow][c + r-idrow] = False
                 continue
@@ -166,6 +178,10 @@ class Player:
         for idrow in range(r + 1, r + self.radius + 1, + 1):
             if idrow >= len(self.origin_map):
                 break
+            if c + r-idrow < 0:
+                break
+            if c + r-idrow >= len(self.origin_map[0]):
+                continue
             if flag_meetwall:
                 self.vision_map[idrow][c + r-idrow] = False
                 continue
@@ -316,7 +332,7 @@ class Player:
             if idrow < 0:
                 break
             for idcol in range(c + 1, c + r-idrow, +1):
-                if idcol < 0:
+                if idcol >= len(self.origin_map[0]):
                     break
                 if isinstance(self.vision_map[idrow][idcol], bool):
                     # already determined
@@ -362,7 +378,7 @@ class Player:
             if idcol < 0:
                 break
             for idrow in range(r + 1, r + c - idcol, +1):
-                if idrow < 0:
+                if idrow >= len(self.origin_map):
                     break
                 if isinstance(self.vision_map[idrow][idcol], bool):
                     # already determined
@@ -493,7 +509,7 @@ class Player:
             if idrow >= len(self.origin_map):
                 break
             for idcol in range(c + 1, c + idrow - r, +1):
-                if idcol < 0:
+                if idcol >= len(self.origin_map[0]):
                     break
                 if isinstance(self.vision_map[idrow][idcol], bool):
                     # already determined
@@ -528,8 +544,6 @@ class Player:
                             # wall
                             meet_wall = True
                         self.vision_map[r + x0][c + y0] = True
-                    print(f'[{r + x0}][{c + y0}]')
-                print('-------------')
     def vision(self):
         """
             reset self.vision_map and define new viewable cells
