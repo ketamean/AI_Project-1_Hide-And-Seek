@@ -76,8 +76,11 @@ class Seeker:
 class Hider:
     def __init__(self, row, col):
         self.position = rl.Vector2(col, row)
-        self.tile_col = 0
-        self.tile_row = 0
+        tilecol = col * MAP_TILE_SIZE
+        tilerow = row * MAP_TILE_SIZE
+        self.position = rl.Vector2(tilecol, tilerow)
+        self.tile_col = col
+        self.tile_row = row
 
     def draw(self):
         rl.draw_rectangle_v(self.position, rl.Vector2(PLAYER_SIZE, PLAYER_SIZE), rl.GREEN)
@@ -99,8 +102,8 @@ def main():
     map.tileFog = [0] * (map.tiles_col * map.tiles_row)
 
     # NOTE: Map tile ids should be probably loaded from an external map file (by definition: 0: empty, 1: obstacle (
-    # yellow), 2: wall (static, black)) Load map tiles (generating 2 random tile ids for testing) for i in range(
-    # map.tiles_row * map.tiles_col): map.tileIds[i] = random.randint(0, 2)
+    # yellow), 2: wall (static, black)) Load map tiles (generating 2 random tile ids for testing)
+    hiders = []
     for i in range(0, prob.num_row):
         for j in range(0, prob.num_col):
             if prob.map_list[i][j][0] == 1000:
@@ -109,11 +112,10 @@ def main():
                 map.tileIds[i * prob.num_col + j] = 2
             elif type(prob.map_list[i][j][0]) == player.Seeker:
                 seeker = Seeker(i, j)
+            elif type(prob.map_list[i][j][0]) == player.Hider:
+                hiders.append(Hider(i, j))
 
     # Seeker position in the map (default tile: 0,0)
-    seeker = Seeker(1, 3)
-    hider1 = Hider(random.randint(0, 800), random.randint(0, 800))
-    hider2 = Hider(random.randint(0, 800), random.randint(0, 800))
 
     # Create a render texture to store the fog of war
     fogOfWar = rl.load_render_texture(map.tiles_col, map.tiles_row)
@@ -192,8 +194,8 @@ def main():
         # Write current player position tile
         rl.draw_text(f"Current tile: [{seeker.tile_row},{seeker.tile_col}]", 10, 10, 20, rl.RAYWHITE)
 
-        hider1.draw()
-        hider2.draw()
+        for hider in hiders:
+            hider.draw()
 
         if user_control:
             rl.draw_text("ARROW KEYS to move", 10, screenHeight - 25, 20, rl.RAYWHITE)
