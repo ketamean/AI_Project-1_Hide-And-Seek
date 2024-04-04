@@ -57,6 +57,8 @@ class Problem:
         nrow, ncol = lines[0].split(sep=' ')
         nrow = int(nrow)
         ncol = int(ncol)
+        self.num_row = nrow
+        self.num_col = ncol
         self.__parse_map(lines=lines)
 
         # list of coordinates of obstacles
