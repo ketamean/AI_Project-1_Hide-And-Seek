@@ -146,14 +146,14 @@ def main():
                 if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
                     seeker.move(-PLAYER_SIZE, 0, map)
             elif rl.is_key_pressed(rl.KEY_DOWN):
-                if map.tileIds[(seeker.tile_row + 1) * map.tiles_col + seeker.tile_col] != 2:
+                # for going down, a bonus list index out of range check is needed
+                if (seeker.tile_row + 1) < map.tiles_row and map.tileIds[(seeker.tile_row + 1) * map.tiles_col + seeker.tile_col] != 2 :
                     seeker.move(0, PLAYER_SIZE, map)
             elif rl.is_key_pressed(rl.KEY_UP):
                 if map.tileIds[(seeker.tile_row - 1) * map.tiles_col + seeker.tile_col] != 2:
                     seeker.move(0, -PLAYER_SIZE, map)
 
         # --------FILE INPUT MOVEMENT--------
-        # file_input_movement = False
 
         # Previous visited tiles are set to partial fog
         for i in range(map.tiles_row * map.tiles_col):
