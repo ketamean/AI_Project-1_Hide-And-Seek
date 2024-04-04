@@ -7,6 +7,10 @@ BUTTON_COLOR = rl.BLUE
 BUTTON_HOVER_COLOR = rl.DARKBLUE
 BUTTON_TEXT_COLOR = rl.WHITE
 
+# LEVEL 
+LEVEL_1 = 1
+LEVEL_2 = 2
+LEVEL_3 = 3
 
 class Button:
     def __init__(self, x, y, text):
@@ -58,7 +62,7 @@ class Menu:
             for button in buttons:
                 if button.is_hovered:
                     print(f"{button.text} was clicked")
-                    return True # PLACE HOLDER FOR LEVEL SELECTION 
+                    return int(button.text[-1])
         
 def main_menu():
     screenWidth = 800
@@ -74,10 +78,9 @@ def main_menu():
         rl.begin_drawing()
         rl.clear_background(rl.BLACK)
 
-        menu.draw()
         if menu.draw():
             break
-
+        
         rl.end_drawing()
 
     rl.close_window()

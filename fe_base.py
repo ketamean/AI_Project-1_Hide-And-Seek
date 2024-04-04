@@ -29,10 +29,9 @@ class Map:
             for col in range(self.tiles_col):
                 # Draw map tiles (depending on tile id)
                 rl.draw_rectangle(col * MAP_TILE_SIZE, row * MAP_TILE_SIZE, MAP_TILE_SIZE, MAP_TILE_SIZE,
-                                  rl.BLUE if self.tileIds[row * self.tiles_col + col] == 0  # Default tile
-                                  else rl.BLACK if self.tileIds[row * self.tiles_col + col] == 2  # Wall(s)
+                                  rl.BLACK if self.tileIds[row * self.tiles_col + col] == 2  # Wall(s)
                                   else rl.GREEN if self.tileIds[row * self.tiles_col + col] == 3  # Hider(s)
-                                  else rl.fade(rl.BLUE, 0.9))  # Default tile (but faded for asthetics)
+                                  else rl.BLUE)  # Default tile
                 # Draw grid
                 rl.draw_rectangle_lines(col * MAP_TILE_SIZE, row * MAP_TILE_SIZE, MAP_TILE_SIZE, MAP_TILE_SIZE,
                                         rl.fade(rl.DARKBLUE, 0.5))
@@ -82,9 +81,12 @@ class Hider:
         self.tile_col = col
         self.tile_row = row
 
-    def draw(self):
-        rl.draw_rectangle_v(self.position, rl.Vector2(PLAYER_SIZE, PLAYER_SIZE), rl.GREEN)
-
+    def draw(self, if_found):
+        rl.draw_rectangle_v(self.position, rl.Vector2(PLAYER_SIZE, PLAYER_SIZE), rl.ORANGE if if_found else rl.GREEN)
+    
+    def if_found(self, seeker):
+        if self.tile_col == seeker.tile_col and self.tile_row == seeker.tile_row:
+            return True
 
 def main():
     screenWidth = SCREEN_WIDTH
@@ -128,16 +130,16 @@ def main():
         user_control = True
         if user_control:
             if rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_DOWN):
-                if map.tileIds[(seeker.tile_row + 1) * map.tiles_col + seeker.tile_col] != 2:
+                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
                     seeker.move(PLAYER_SIZE, PLAYER_SIZE, map)
             elif rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_UP):
-                if map.tileIds[(seeker.tile_row - 1) * map.tiles_col + seeker.tile_col] != 2:
+                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
                     seeker.move(PLAYER_SIZE, -PLAYER_SIZE, map)
             elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_DOWN):
-                if map.tileIds[(seeker.tile_row + 1) * map.tiles_col + seeker.tile_col] != 2:
+                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
                     seeker.move(-PLAYER_SIZE, PLAYER_SIZE, map)
             elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_UP):
-                if map.tileIds[(seeker.tile_row - 1) * map.tiles_col + seeker.tile_col] != 2:
+                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
                     seeker.move(-PLAYER_SIZE, -PLAYER_SIZE, map)
             elif rl.is_key_pressed(rl.KEY_RIGHT):
                 if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
@@ -158,15 +160,17 @@ def main():
         # Previous visited tiles are set to partial fog
         for i in range(map.tiles_row * map.tiles_col):
             if map.tileFog[i] == 1:
-                map.tileFog[i] = 2
+                map.tileFog[i] = 2 
 
         # Check visibility and update fog
         # NOTE: It is important to check tilemap limits to avoid processing tiles out-of-array-bounds (it could crash program)
-        for row in range(seeker.tile_row - PLAYER_TILE_VISIBILITY, seeker.tile_row + PLAYER_TILE_VISIBILITY):
-            for col in range(seeker.tile_col - PLAYER_TILE_VISIBILITY, seeker.tile_col + PLAYER_TILE_VISIBILITY):
-                if 0 <= col < map.tiles_col and 0 <= row < map.tiles_row:
-                    map.tileFog[row * map.tiles_col + col] = 1
-
+        for row in range(max(0, seeker.tile_row - PLAYER_TILE_VISIBILITY), min(map.tiles_row, seeker.tile_row + PLAYER_TILE_VISIBILITY + 1)):
+            for col in range(max(0, seeker.tile_col - PLAYER_TILE_VISIBILITY), min(map.tiles_col, seeker.tile_col + PLAYER_TILE_VISIBILITY + 1)):
+                map.tileFog[row * map.tiles_col + col] = 1  # Set tile to visible
+                # Due to a problem with x and y cords turned into tiles, 
+                # the edge of the map is visible when seeker is at the edge on the opposite side
+                # CURRENTLY UNFIXABLE
+                    
         # -----------------------------RENDERING-----------------------------
         # TEXTURE
         rl.begin_texture_mode(fogOfWar)
@@ -194,9 +198,13 @@ def main():
         # Write current player position tile
         rl.draw_text(f"Current tile: [{seeker.tile_row},{seeker.tile_col}]", 10, 10, 20, rl.RAYWHITE)
 
+        # Check if hider is found
         for hider in hiders:
-            hider.draw()
-
+            if hider.if_found(seeker):
+                hider.draw(True)
+            else:
+                hider.draw(False)
+        
         if user_control:
             rl.draw_text("ARROW KEYS to move", 10, screenHeight - 25, 20, rl.RAYWHITE)
         else:
