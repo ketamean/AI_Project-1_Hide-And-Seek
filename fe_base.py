@@ -1,6 +1,8 @@
 import pyray as rl
 import random
 import fe_menu
+import problem
+import player
 
 #-------------------ELEMENTS-------------------
 MAP_TILE_SIZE = 20
@@ -12,7 +14,7 @@ MAP_TILE_X = 15
 MAP_TILE_Y = 20
 SCREEN_WIDTH = MAP_TILE_SIZE * MAP_TILE_X
 SCREEN_HEIGHT = MAP_TILE_SIZE * MAP_TILE_Y
-
+prob = problem.Problem(input_filename='map1_1.txt',allow_move_obstacles=False)
 class Map:
     def __init__(self):
         self.tilesX = 0 # Number of tiles in X axis
@@ -90,14 +92,26 @@ def main():
     map.tileIds = [0] * (map.tilesX * map.tilesY)
     map.tileFog = [0] * (map.tilesX * map.tilesY)
 
-    # NOTE: Map tile ids should be probably loaded from an external map file (by defination: 0: empty, 1: obstacle (static), 2: hider (static))    
+    # NOTE: Map tile ids should be probably loaded from an external map file (by defination: 0: empty, 1: obstacle (yellow), 2: wall (static, black))
     # Load map tiles (generating 2 random tile ids for testing)
     # for i in range(map.tilesY * map.tilesX):
-    #    map.tileIds[i] = random.randint(0, 2)
-    
-    # Seeker position in the map (default tile: 0,0)   
-    seeker = Seeker(3, 3)
-    
+    #     map.tileIds[i] = random.randint(0, 2)
+    for i in range(0, prob.num_row):
+        for j in range(0, prob.num_col):
+            if prob.map_list[i][j][0] == 1000:
+                map.tileIds[i * prob.num_col + j] = 0
+            elif prob.map_list[i][j][0] == -1:
+                map.tileIds[i * prob.num_col + j] = 2
+            elif type(prob.map_list[i][j][0]) == player.Seeker:
+                seeker = Seeker(i, j)
+
+
+
+    # Seeker position in the map (default tile: 0,0)
+    seeker = Seeker(2, 1)
+    hider1 = Hider(random.randint(0, 800), random.randint(0, 800))
+    hider2 = Hider(random.randint(0, 800), random.randint(0, 800))
+
     # Create a render texture to store the fog of war
     fogOfWar = rl.load_render_texture(map.tilesX, map.tilesY)
     rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR)
@@ -174,7 +188,10 @@ def main():
                             rl.Vector2(0, 0), 0.0, rl.WHITE)
         
         # Write current player position tile
-        rl.draw_text(f"Current tile: [{seeker.tileX},{seeker.tileY}]", 10, 10, 20, rl.RAYWHITE)         
+        rl.draw_text(f"Current tile: [{seeker.tileX},{seeker.tileY}]", 10, 10, 20, rl.RAYWHITE)
+        
+        hider1.draw()
+        hider2.draw()        
         
         if user_control:
             rl.draw_text("ARROW KEYS to move", 10, screenHeight - 25, 20, rl.RAYWHITE)
