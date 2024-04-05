@@ -2,6 +2,7 @@ from problem import *
 from obstacle import *
 from player import *
 from pq import *
+from state_for_fe import StateForFE
 class Level1:
     pass
 
@@ -46,6 +47,8 @@ class Level2:
                     tmp_row.append(-1)
                 else:
                     tmp_row.append(1000)
+            skelaton_map.append( tmp_row )
+        
         from copy import deepcopy
         seeker.vision_map = deepcopy(skelaton_map)
         seeker.heuristic_map = deepcopy(skelaton_map)
@@ -146,23 +149,52 @@ class Level2:
     #                     if seen_map[_r + i][_c + j] == False and v_map[_r + i][_c + j] == True:
     #                         # have not seen yet but now we do
     #                         cnt += 1
+    ADJACENT = [
+        (-1,-1),    (-1,0),     (-1,1),
+        (0,-1),                 (0,1),
+        (1,-1),     (1,0),      (1,1)
+    ]
+    def __backtrack_find_path(self, cur_coor: tuple, to_coor: tuple, cur_path: list, map: list):
+        if cur_coor == to_coor:
+            return cur_path
+        r,c = cur_coor
+        map[r][c] = False
+        for pair in Level2.ADJACENT:
+            next_r = r + pair[0]
+            next_c = c + pair[1]
+            if (next_r < 0 or next_r >= len(self.problem.map_list) or
+                next_c < 0 or next_c >= len(self.problem.map_list[0]) or
+                -1 in self.problem.map_list[next_r][next_c] or
+                map[next_r][next_c] == False
+                ):
+                continue
+            cur_path.append( (next_r, next_c) )
+            res = self.__backtrack_find_path(
+                cur_coor=(next_r, next_c),
+                to_coor=to_coor,
+                cur_path=cur_path,
+                map=map
+            )
+            cur_path.pop()
+            if res:
+                return res
 
-    
+        map[r][c] = True
     def __choose_step_no_info(self):
         """
             let seeker take a step when there is no percept of Hider and Announcement
 
-            returns False if end game (no cell to go); otherwise
+            returns False if end game (no cell to go); otherwise, a list of steps (as coordinates)
         """
         from copy import deepcopy
         seeker = self.problem.seeker
         cur_r,cur_c = seeker.coordinate     # current coordinate of the agent
         DIRECTIONS = [
-            (cur_r-1, cur_c-1), (cur_r-1, cur_c), (cur_r-1, cur_c+1),
-            (cur_r, cur_c-1), (cur_r, cur_c+1),
-            (cur_r+1, cur_c-1), (cur_r+1, cur_c), (cur_r+1, cur_c+1)
+            (cur_r-1, cur_c-1), (cur_r-1, cur_c),   (cur_r-1, cur_c+1),
+            (cur_r, cur_c-1),                       (cur_r, cur_c+1),
+            (cur_r+1, cur_c-1), (cur_r+1, cur_c),   (cur_r+1, cur_c+1)
         ]
-        if len(self.steps_stack):
+        if len(self.steps_stack) == 0:
             # the first step => has no previous step
             pass
         else:
@@ -173,6 +205,7 @@ class Level2:
 
             # traverse all potential coordinate of the next step
             for (idr, idc) in DIRECTIONS:
+                
                 if idr < 0 or idr >= len(seeker.vision_map) or idc < 0 or idc >= len(seeker.vision_map[0]):
                     # index out of range
                     continue
@@ -189,9 +222,11 @@ class Level2:
                     tmp_seeker = Seeker(
                         coordinate=(idr, idc)
                     )
+                    tmp_seeker.origin_map = seeker.origin_map
+                    tmp_seeker.skelaton_map = seeker.skelaton_map
                     tmp_seeker.vision()
-                    __v_map = deepcopy(tmp_seeker.vision_map)
-                    self.vision_maps[ (idr, idc) ] = __v_map
+                    v_map = deepcopy(tmp_seeker.vision_map)
+                    self.vision_maps[ (idr, idc) ] = v_map
                 cnt = 0
 
                 # traverse vision map of the potentially next step
@@ -217,6 +252,8 @@ class Level2:
                 elif cnt == max_count_val:
                     max_coordinate.append( (idr, idc) )
 
+            # print('max:', max_count_val)
+            # print('n cell:', len(max_coordinate))
             if len(max_coordinate) == 0:
                 # is blocked, cannot move to any adjacent cells
                 return False
@@ -225,7 +262,7 @@ class Level2:
                 if max_count_val == 0:
                     # h = 0: no new vision
                     radius = seeker.radius + 1
-                    stop_flag = True        # to check whether we expand the whole map
+                    stop_flag = True        # to check whether we expanded the whole map
                     while stop_flag:
                         stop_flag = False
                         cells = []
@@ -237,6 +274,9 @@ class Level2:
                                     continue
                                 if col >= len(seeker.origin_map[0]):
                                     break
+                                if -1 in seeker.origin_map[row][col]:
+                                    # skip wall
+                                    continue
                                 if self.seen_map[row][col] == False:
                                     cells.append(
                                         {
@@ -254,6 +294,9 @@ class Level2:
                                     continue
                                 if col >= len(seeker.origin_map[0]):
                                     break
+                                if -1 in seeker.origin_map[row][col]:
+                                    # skip wall
+                                    continue
                                 if self.seen_map[row][col] == False:
                                     cells.append(
                                         {
@@ -270,6 +313,9 @@ class Level2:
                                     continue
                                 if row >= len(seeker.origin_map):
                                     break
+                                if -1 in seeker.origin_map[row][col]:
+                                    # skip wall
+                                    continue
                                 if self.seen_map[row][col] == False:
                                     cells.append(
                                         {
@@ -286,6 +332,9 @@ class Level2:
                                     continue
                                 if row >= len(seeker.origin_map):
                                     break
+                                if -1 in seeker.origin_map[row][col]:
+                                    # skip wall
+                                    continue
                                 if self.seen_map[row][col] == False:
                                     cells.append(
                                         {
@@ -293,10 +342,22 @@ class Level2:
                                             'distance': abs(row - cur_r) + abs(col - cur_c) # manhattan distance
                                         }
                                     )
-
+                        if len(cells):
+                            _tmp_map = [ # a map which is False if tile is a wall; otherwise, False
+                                [False if cell == -1 else True for cell in row] for row in seeker.skelaton_map
+                            ]
                         if len(cells) == 1:
                             # there is only 1 cell at the lowest level that we have no vision
-                            return cells[0].get('coordinate')
+                            res = self.__backtrack_find_path(
+                                cur_coor=(cur_r, cur_c),
+                                to_coor=cells[0].get('coordinate'),
+                                cur_path=[],
+                                map=_tmp_map
+                            )
+                            if res:
+                                return res
+                            else:
+                                return False
                         elif len(cells) > 1:
                             # there are multiple cells at this level of BFS
 
@@ -306,11 +367,21 @@ class Level2:
                                     min_distance = [ el ]
                                 elif el['distance'] == min_distance[0]['distance']:
                                     min_distance.append( el )
-                            
-                            return min_distance[0].get('coordinate')
-
+                            res = self.__backtrack_find_path(
+                                cur_coor=(cur_r, cur_c),
+                                to_coor=min_distance[0].get('coordinate'),
+                                cur_path=[],
+                                map=_tmp_map
+                            )
+                            if res:
+                                return res
+                            else:
+                                return False 
+                        radius += 1
+                    
                     # if it reach here, there is no cell to see
                     return False
+                    # end while
                 else:
                     # h != 0: choose the cell whose Manhattan distance from the previous cell is the largest
                     max_distance = -1
@@ -320,9 +391,9 @@ class Level2:
                         tmp_dis = abs(last_r - i) + abs(last_c - j)
                         if tmp_dis > max_distance:
                             max_distance_coor = (i,j)
-                    return max_distance_coor
+                    return [max_distance_coor]
             else:
-                return (max_coordinate[0])
+                return [(max_coordinate[0])]
 
     def __choose_step_w_hider(self):
         pass
@@ -335,7 +406,7 @@ class Level2:
         seeker = self.problem.seeker
         hider_coor = []
         announcement_coor = []
-        self.steps_stack = []                   # stack of steps of seeker
+        self.steps_stack = [ copy(seeker.coordinate) ]                   # stack of steps of seeker
 
         self.vision_maps = {                    # map a coordinate with the corresponding vision map for later reuse
             
@@ -390,7 +461,68 @@ class Level2:
                     pass
             else:
                 # no hider, no announcement
-                self.__choose_step_no_info()
+                res = self.__choose_step_no_info()
+                if res == False:
+                    # give up
+                    return [], False
+                for R, C in res:
+                    self.problem.map_list[r][c].remove( seeker )
+                    seeker.coordinate = (R,C)
+                    visionmap = self.vision_maps.get( (R,C) )
+                    if visionmap == None:
+                        tmp_seeker = Seeker(
+                            coordinate=(R, C)
+                        )
+                        tmp_seeker.origin_map = seeker.origin_map
+                        tmp_seeker.skelaton_map = seeker.skelaton_map
+                        tmp_seeker.vision()
+                        visionmap = deepcopy(tmp_seeker.vision_map)
+                        self.vision_maps[ (idr, idc) ] = visionmap
 
-lv2 = Level2('test/map1_1.txt')
-lv2.run()
+                    # -----------------------------------------------------------------
+                    # print debug
+                    # for row in visionmap:
+                    #     for cell in row:
+                    #         if cell == -1:
+                    #             print('x', end=' ')
+                    #         elif cell == 1000:
+                    #             print('-', end=' ')
+                    #         elif cell:
+                    #             print(1, end=' ')
+                    #         else:
+                    #             print(0, end=' ')
+                    #     print()
+                    # -----------------------------------------------------------------
+
+                    # after choosing a cell, assign new vision to the seen map
+                    for idr in range(R - seeker.radius, R + seeker.radius + 1, +1):
+                        if idr < 0:
+                            continue
+                        if idr >= len(seeker.vision_map):
+                            break
+                        for idc in range(C - seeker.radius, C + seeker.radius + 1, +1):
+                            if idc < 0:
+                                continue
+                            if idc >= len(seeker.vision_map[0]):
+                                break
+                            if visionmap[idr][idc] == True:
+                                self.seen_map[idr][idc] = True
+                    if 1000 in self.problem.map_list[R][C]:
+                        self.problem.map_list[R][C] = [ seeker ]
+                    else:
+                        self.problem.map_list[R][C].append( seeker )
+                    
+                    yield StateForFE(
+                        player=seeker,
+                        old_row=self.steps_stack[-1][0],
+                        old_col=self.steps_stack[-1][1],
+                        new_row=R,
+                        new_col=C,
+                        announcements=[]
+                    )
+                    self.steps_stack.append( (R,C) )
+                
+if __name__ == '__main__':
+    lv2 = Level2('test/map1_1.txt')
+    for state in lv2.run():
+        print(state.old_coordinate, '-->', state.new_coordinate)
