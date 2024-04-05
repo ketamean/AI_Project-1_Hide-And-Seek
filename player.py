@@ -618,12 +618,37 @@ class Hider(Player):
     
     def announce(self, map: list):
         """
-            choose a sufficiently good position to raise an announcement
+            raise an announcement randomly
 
-            return the coordinate (id_row, id_col) of the cell where announcement raised
+            return the announcement object
         """
-        pass
-    
+        from random import randint
+        lwr_r, upr_r = self.coordinate  # lower bound and upper bound of row idx
+        lwr_c, upr_c = self.coordinate  # lower bound and upper bound of col idx
+        for i in range(-self.radius, self.radius + 1, +1):
+            lwr_r += i
+            if lwr_r >= 0:
+                break
+        for i in range(self.radius, self.radius - 1, -1):
+            upr_r += i
+            if upr_r < len(self.origin_map):
+                break
+        for i in range(-self.radius, self.radius + 1, +1):
+            lwr_c += i
+            if lwr_c >= 0:
+                break
+        for i in range(self.radius, self.radius - 1, -1):
+            upr_c += i
+            if upr_c < len(self.origin_map[0]):
+                break
+
+        r,c = randint(lwr_r, upr_r), randint(lwr_c, upr_c)
+
+        return Announcement(
+            coordinate=(r,c),
+            hider=self
+        )
+
     @staticmethod
     def move_obstacles(map: list, obstacles: list):
         """
