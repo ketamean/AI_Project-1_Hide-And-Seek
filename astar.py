@@ -23,7 +23,7 @@ def get_path_from_parent(node: Node):
     return l
 
 def heuristic(start_coor: tuple, goal_coor: tuple):
-    return abs(start_coor[0] - goal[0]) + abs(start_coor[1] - goal[1])
+    return abs(start_coor[0] - goal_coor[0]) + abs(start_coor[1] - goal_coor[1])
 
 def astar(grid, start_coor: tuple, goal_coor: tuple):
     """
