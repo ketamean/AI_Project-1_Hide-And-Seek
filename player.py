@@ -643,11 +643,18 @@ class Hider(Player):
                 break
 
         r,c = randint(lwr_r, upr_r), randint(lwr_c, upr_c)
-
-        return Announcement(
+        res = Announcement(
             coordinate=(r,c),
             hider=self
         )
+        if 1000 in self.origin_map[r][c]:
+            # empty cell
+            self.origin_map[r][c] = [ res ]
+        else:
+            # non-empty cell
+            self.origin_map[r][c].append( res )
+            
+        return res
 
     @staticmethod
     def move_obstacles(map: list, obstacles: list):
