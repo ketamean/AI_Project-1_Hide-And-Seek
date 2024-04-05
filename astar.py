@@ -88,20 +88,3 @@ def astar(grid, start_coor: tuple, goal_coor: tuple):
                 frontier.push( (child.cost, child) )
     
     return None  # No path found
-
-# Example usage:
-grid = [
-    [0, 0, 0, 0],
-    [0, 1, 1, 0],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0]
-]
-
-start = (0, 0)
-goal = (3, 3)
-
-path = astar(grid, start, goal)
-if path:
-    print("Path found:", path)
-else:
-    print("No path found")
