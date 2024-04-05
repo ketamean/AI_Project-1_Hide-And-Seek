@@ -27,6 +27,7 @@ def heuristic(start_coor: tuple, goal_coor: tuple):
 
 def astar(grid, start_coor: tuple, goal_coor: tuple):
     """
+        grid: cells we cannot get through are False; others are True 
         get list of coordinate from start to goal, excluding the start node
 
         if there is no path, returns None
