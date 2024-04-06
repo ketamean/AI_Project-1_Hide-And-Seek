@@ -64,7 +64,7 @@ class Menu:
                     print(f"{button.text} was clicked")
                     return int(button.text[-1])
         
-def main_menu():
+def main_menu() -> int:
     screenWidth = 800
     screenHeight = 450
 
@@ -73,17 +73,18 @@ def main_menu():
     rl.set_target_fps(30)
 
     menu = Menu("Main Menu", screenHeight, screenWidth)
-
     while not rl.window_should_close():
         rl.begin_drawing()
         rl.clear_background(rl.BLACK)
 
-        if menu.draw():
+        level = menu.draw()
+        if level:
             break
         
         rl.end_drawing()
 
     rl.close_window()
+    return level
 
 if __name__ == "__main__":
     main_menu()
