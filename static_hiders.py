@@ -87,10 +87,8 @@ class Level2:
                 seeker.score += 20
                 print('found', (cur_r, cur_c))
                 self.visibile_hider_coor.remove( (cur_r, cur_c) )
-                
-                # mark hider as found
-                self.mark_found_hider[element.id] = True
-
+                self.problem.hiders.remove(element)
+                self.problem.map_list[cur_r][cur_c].remove(element)
                 # remove all of its announcements in the list of visible announcements
                 for ann in self.visible_announcements:
                     if ann['hider_id'] == element.id:
@@ -98,6 +96,7 @@ class Level2:
                 if self.current_announcement and self.current_announcement['hider_id'] == element.id:
                     self.current_announcement = None
                     self.seeker_path_for_announcement = []
+                
                 break
 
     def __seeker_check_new_hider_and_announcement(self):
@@ -246,7 +245,7 @@ class Level2:
                     return path
         return None
     
-    def __hider_at_id_take_turn(self, id: int):
+    def __hider_take_turn(self, hider: Hider):
         """
             a hider in the list of hiders takes its turn:
                 - increase count to announcement
@@ -255,7 +254,6 @@ class Level2:
             id: index of hider in the list of hider in the problem, and it is also ID of the hider
             returns nothing
         """
-        hider = self.problem.hiders[id]
         hider.count_to_announcement += 1
         if hider.count_to_announcement == hider.step_to_announcement:
             if len(self.announcements_on_map) == self.total_hiders:
@@ -530,10 +528,9 @@ class Level2:
         self.seen_map = [                       # list of cells which seeker has already seen
             [True if cell == -1 else False for cell in row ] for row in seeker.skeleton_map
         ]                                       # True / False
-        self.visited_map = deepcopy(self.seen_map)  # list of cells which seeker has already visited
+        # self.visited_map = deepcopy(self.seen_map)  # list of cells which seeker has already visited
                                                 # True / False
-        self.mark_found_hider = [False for hider in self.problem.hiders]
-                                                # mark if hider at the corresponding index in the list problem.hiders is found
+        
         seeker_turn = True
         self.seeker_path_to_hider = []          # step by step, 0..n-1  
         self.seeker_path_for_announcement = []  # step by step, 0..n-1
@@ -549,14 +546,11 @@ class Level2:
         while True:
             if not seeker_turn: # it is hiders' turn
                 # traverse all hiders in the map
-                for id in range(len(self.problem.hiders)):
+                for hider in self.problem.hiders:
                     # skip if hider has been caught
-                    if self.mark_found_hider[id] == True:
-                        continue
 
-                    self.__hider_at_id_take_turn(id)
+                    self.__hider_take_turn(hider=hider)
 
-                    hider = self.problem.hiders[id]
                     yield StateForFE(
                         player=hider,
                         old_row=hider.coordinate[0],
@@ -712,7 +706,7 @@ class Level2:
                     announcements=self.announcements_on_map
                 )
 if __name__ == '__main__':
-    lv2 = Level2('test/map1_3.txt')
+    lv2 = Level2('test/map1_2.txt')
     for state in lv2.run():
         if state.player.signature == 'Hider':
             # print('Hider\'s turn.')
