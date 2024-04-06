@@ -5,16 +5,18 @@ class StateForFE:
     """
     _all_states = [] # list of states
     _cnt_state = 0
-    def __init__(self, player: Hider | Seeker, old_row: int, old_col: int, new_row: int, new_col: int) -> None:
+    def __init__(self, player: Hider | Seeker, old_row: int, old_col: int, new_row: int, new_col: int, announcements: list) -> None:
         """
             args:
                 player: the player object from which we can get the signature, id (if it is a Hider),...
+                announcements: list of coordinate of announcements in the game board
         """
         from copy import deepcopy
         self.player = player                        # player's signature (Hider or Seeker)
         self.old_coordinate = (old_row, old_col)
         self.new_coordinate = (new_row, new_col)
         self.vision = deepcopy(player.vision_map)
+        self.announcement = deepcopy(announcements) # list of announcements' coordinate
         # add this new state to the list of states
         StateForFE._all_states.append( self )
 
