@@ -21,7 +21,7 @@ class Player:
         self.origin_map = None
         self.vision_map = None
         self.heuristic_map = None
-        self.skelaton_map = None        # skelaton map which includes walls only
+        self.skeleton_map = None        # skeleton map which includes walls only
                                         # -1 for walls, 1000 for empty cells
 
     # def result(self, origin_state: State, action: str, map: list):
@@ -551,7 +551,7 @@ class Player:
             returns nothing
         """
         from copy import deepcopy
-        self.vision_map = deepcopy(self.skelaton_map)
+        self.vision_map = deepcopy(self.skeleton_map)
         # 4 main lines
         self.__vision_row()
         self.__vision_col()
@@ -589,7 +589,7 @@ class Hider(Player):
 
         there is an attribute called self.signature (a string) used to distinguish between a Hider and a Seeker. For a hider, signature = 'Hider' (with capitalized H)
 
-        hider keeps a skelaton version of the map, which is the map in the pov of the hider (already known walls)
+        hider keeps a skeleton version of the map, which is the map in the pov of the hider (already known walls)
     """
     _cnt = 0        # count for ID
     def __init__(self, coordinate: tuple, radius = 3, step_to_announcement = 5) -> None:
@@ -624,27 +624,28 @@ class Hider(Player):
             return the announcement object, and you MUST put it in the map
         """
         from random import randint
+        cur_r, cur_c = self.coordinate
         lwr_r, upr_r = self.coordinate  # lower bound and upper bound of row idx
         lwr_c, upr_c = self.coordinate  # lower bound and upper bound of col idx
-        for i in range(-self.radius, self.radius + 1, +1):
-            lwr_r += i
+        for i in range(cur_r-self.radius, cur_r + 1, +1):
+            lwr_r = i
             if lwr_r >= 0:
                 break
-        for i in range(self.radius, self.radius - 1, -1):
-            upr_r += i
+        for i in range(cur_r+self.radius, cur_r - 1, -1):
+            upr_r = i
             if upr_r < len(self.origin_map):
                 break
-        for i in range(-self.radius, self.radius + 1, +1):
-            lwr_c += i
+        for i in range(cur_c-self.radius, cur_c + 1, +1):
+            lwr_c = i
             if lwr_c >= 0:
                 break
-        for i in range(self.radius, self.radius - 1, -1):
-            upr_c += i
+        for i in range(cur_c+self.radius, cur_c - 1, -1):
+            upr_c = i
             if upr_c < len(self.origin_map[0]):
                 break
         while True:
             r,c = randint(lwr_r, upr_r), randint(lwr_c, upr_c)
-            if self.skelaton_map[r][c] != -1:
+            if self.skeleton_map[r][c] != -1:
                 break
         res = Announcement(
             coordinate=(r,c),
@@ -704,6 +705,7 @@ class Announcement:
         """
         self.coordinate = coordinate
         self.hider = hider
+        self.signature = 'Announcement'
 
 class Seeker(Player):
     """
@@ -713,7 +715,7 @@ class Seeker(Player):
 
         there is an attribute called self.signature (a string) used to distinguish between a Hider and a Seeker. For a seeker, signature = 'Seeker' (with capitalized S)
 
-        seeker keeps a skelaton version of the map, which is the map in the pov of the seeker (already known walls)
+        seeker keeps a skeleton version of the map, which is the map in the pov of the seeker (already known walls)
     """
     def __init__(self, coordinate: tuple, radius = 3) -> None:
         """
