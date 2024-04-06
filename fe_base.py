@@ -88,6 +88,34 @@ class Hider:
         if self.tile_col == seeker.tile_col and self.tile_row == seeker.tile_row:
             return True
 
+
+def handle_input(map, seeker) -> None:
+    if rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_DOWN):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
+            seeker.move(PLAYER_SIZE, PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_UP):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
+            seeker.move(PLAYER_SIZE, -PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_DOWN):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
+            seeker.move(-PLAYER_SIZE, PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_UP):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
+            seeker.move(-PLAYER_SIZE, -PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_RIGHT):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
+            seeker.move(PLAYER_SIZE, 0, map)
+    elif rl.is_key_pressed(rl.KEY_LEFT):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
+            seeker.move(-PLAYER_SIZE, 0, map)
+    elif rl.is_key_pressed(rl.KEY_DOWN):
+        # for going down, a bonus list index out of range check is needed
+        if (seeker.tile_row + 1) < map.tiles_row and map.tileIds[
+            (seeker.tile_row + 1) * map.tiles_col + seeker.tile_col] != 2:
+            seeker.move(0, PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_UP):
+        if map.tileIds[(seeker.tile_row - 1) * map.tiles_col + seeker.tile_col] != 2:
+            seeker.move(0, -PLAYER_SIZE, map)
 def main():
     screenWidth = SCREEN_WIDTH
     screenHeight = SCREEN_HEIGHT
@@ -129,32 +157,7 @@ def main():
         # --------USER CONTROL MOVEMENT (ONLY FOR DEBUGGING) --------
         user_control = True
         if user_control:
-            if rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_DOWN):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
-                    seeker.move(PLAYER_SIZE, PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_UP):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
-                    seeker.move(PLAYER_SIZE, -PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_DOWN):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
-                    seeker.move(-PLAYER_SIZE, PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_UP):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
-                    seeker.move(-PLAYER_SIZE, -PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_RIGHT):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
-                    seeker.move(PLAYER_SIZE, 0, map)
-            elif rl.is_key_pressed(rl.KEY_LEFT):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
-                    seeker.move(-PLAYER_SIZE, 0, map)
-            elif rl.is_key_pressed(rl.KEY_DOWN):
-                # for going down, a bonus list index out of range check is needed
-                if (seeker.tile_row + 1) < map.tiles_row and map.tileIds[(seeker.tile_row + 1) * map.tiles_col + seeker.tile_col] != 2 :
-                    seeker.move(0, PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_UP):
-                if map.tileIds[(seeker.tile_row - 1) * map.tiles_col + seeker.tile_col] != 2:
-                    seeker.move(0, -PLAYER_SIZE, map)
-
+            handle_input(map, seeker)
         # --------FILE INPUT MOVEMENT--------
 
         # Previous visited tiles are set to partial fog
