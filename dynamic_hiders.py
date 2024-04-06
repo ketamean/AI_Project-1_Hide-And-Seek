@@ -1,8 +1,11 @@
+import random
+
 import problem as cprob
 from obstacle import *
 from player import *
 from copy import deepcopy
-import state_for_fe as tfe
+import state_for_fe as sff
+from astar import astar
 class Level3:
 
     def __init__(self, file_path: str)->None:
@@ -11,8 +14,9 @@ class Level3:
         self.problem.seeker.origin_map = self.problem.map_list
         self.seeker_seen_cells = set()
         self.path_save = [tuple]
-        self.seeker_visited_cells: [tuple]
-        self.announcement: []
+        self.seeker_visited_cells = [tuple]
+        self.announcement = []
+        self.path_to_cell = None | list
 
         skeleton_map = []
         for row in self.problem.map_list:
@@ -26,6 +30,16 @@ class Level3:
         self.problem.seeker.vision_map = deepcopy(skeleton_map)
         self.problem.seeker.heuristic_map = deepcopy(skeleton_map)
         self.problem.seeker.skeleton_map = skeleton_map
+        self.grid_for_astar = []
+        for row in self.problem.map_list:
+            tmp_row = []
+            for cell in row:
+                if cell[0] == -1:
+                    tmp_row.append(False)
+                else:
+                    tmp_row.append(True)
+            self.grid_for_astar.append(tmp_row)
+
 
     def is_valid_cell(self, row, col) -> bool:
         if row < 0 or row >= self.problem.num_row:
@@ -33,7 +47,7 @@ class Level3:
         if col < 0 or col >= self.problem.num_col:
             return False
         return True
-    def number_of_new_cells(self, new_seeker: Seeker) -> None:
+    def number_of_new_cells(self, new_seeker: Seeker) -> int:
         new_cells = 0
         for i in range(max(0, new_seeker.coordinate[0] - 3), min(new_seeker.coordinate[0] + 3 + 1, self.problem.num_row)):
             for j in range(max(0, new_seeker.coordinate[1] - 3), min(new_seeker.coordinate[1] + 3 + 1, self.problem.num_col)):
@@ -42,12 +56,34 @@ class Level3:
                         new_cells += 1
         return new_cells
 
+    def seeker_finds_hider(self)->None|tuple:
+        seeker = self.problem.seeker
+        for i in range(max(0, seeker.coordinate[0] - 3), min(seeker.coordinate[0] + 3 + 1, self.problem.num_row)):
+            for j in range(max(0, seeker.coordinate[1] - 3), min(seeker.coordinate[1] + 3 + 1, self.problem.num_col)):
+                if type(seeker.vision_map[i][j]) == bool and seeker.vision_map[i][j] == True:
+                    for item in self.problem.map_list[i][j]:
+                        if type(item) == Hider:
+                            return i, j
+        return None
+
+    def seeker_finds_announcements(self) -> None|tuple:
+        seeker = self.problem.seeker
+        for i, j in self.announcement:
+            if type(seeker.vision_map[i][j]) == bool and seeker.vision_map[i][j] == True:
+                return i,j
+        return None
+
     # choose next cell to move in normal situation (without announcement)
-    def seeker_choose_cells(self):
+    def seeker_choose_cells(self)->tuple|list:
         seeker = self.problem.seeker
         seeker_row, seeker_col = seeker.coordinate
         seeker.vision()
 
+        if self.seeker_finds_announcements() is not None:
+            return self.seeker_finds_announcements()
+
+        # find nearby 8 cells
+        nearby_cells = []
         for row_delta in range(-1, 2):
             for col_delta in range(-1, 2):
                 new_row = seeker_row + row_delta
@@ -66,19 +102,47 @@ class Level3:
                 new_seeker.coordinate = (new_row, new_col)
                 new_seeker.vision()
                 new_cells = self.number_of_new_cells(new_seeker)
-                print(new_seeker.coordinate, new_cells)
+                nearby_cells.append((new_seeker.coordinate, new_cells))
+        return nearby_cells
 
 
     def seeker_moves(self):
         seeker = self.problem.seeker
         seeker.vision()
+        seeker_row, seeker_col = seeker.coordinate
         for i in range(self.problem.num_row):
             for j in range(self.problem.num_col):
                 if type(seeker.vision_map[i][j]) == bool and seeker.vision_map[i][j] == True:
                     if seeker.skeleton_map[i][j] != -1:
                         self.seeker_seen_cells.add((i, j))
 
-        self.seeker_choose_cells()
+        if self.seeker_finds_hider() is not None:
+            new_row, new_col = None, None
+            hider_loc = self.seeker_finds_hider()
+            min_manhattan_dis = 100
+            for row_delta in range(-1, 2):
+                for col_delta in range(-1, 2):
+                    temp_row = seeker_row + row_delta
+                    temp_col = seeker_col + col_delta
+                    if self.is_valid_cell(temp_row, temp_col) and seeker.skeleton_map[temp_row][temp_col] == -1:
+                        if abs(temp_row - hider_loc[0]) + abs(temp_col - hider_loc[1]) < min_manhattan_dis:
+                            min_manhattan_dis = abs(temp_row - hider_loc[0]) + abs(temp_col - hider_loc[1])
+                            new_row = temp_row
+                            new_col = temp_col
+            # move to new_row and new_col, nếu có hider ở ô này thì đánh dấu đã bắt.
+        # Nếu đang tìm hiểu xung quanh 1 announcement thì tìm tiếp, không thì tìm thông tin từ 1 announcement mới.
+        elif self.path_to_cell is not None:
+            pass
+        elif self.seeker_finds_announcements() is not None:
+            announcement = self.seeker_finds_announcements()
+            for i in range(max(0, announcement[0] - 3), min(announcement[0] + 3 + 1, self.problem.num_row)):
+                for j in range(max(0, announcement[1] - 3),min(announcement[1] + 3 + 1, self.problem.num_col)):
+                    if (i, j) not in self.seeker_seen_cells:
+                        path = astar(goal_coor=(i, j),grid=self.grid_for_astar, start_coor=seeker.coordinate)
+                        if path is not None:
+                            # TODO: Continue from here, implement going with path
+                            pass
+        cells_chosen = self.seeker_choose_cells()
         pass
 
     def hider_see_moves(self, hider: Hider):
@@ -86,8 +150,9 @@ class Level3:
         for i in range(max(0, hider.coordinate[0] - 2), min(hider.coordinate[0] + 2 + 1, self.problem.num_row)):
             for j in range(max(0, hider.coordinate[1] - 2), min(hider.coordinate[1] + 2 + 1, self.problem.num_col)):
                 if type(hider.vision_map[i][j]) == bool and hider.vision_map[i][j]:
-                    if type(self.problem.map_list[i][j][0]) == Seeker:
-                        seeker_location = (i, j)
+                    for item in self.problem.map_list[i][j]:
+                        if type(item) == Seeker:
+                            seeker_location = (i, j)
         if seeker_location == None:
             return
         old_hider_location = hider.coordinate
@@ -112,19 +177,36 @@ class Level3:
             self.problem.map_list[new_row][new_col].append(hider)
         pass
 
-    def hider_moves(self):
+    def hiders_move(self):
         hiders = self.problem.hiders
         for hider in hiders:
             hider.vision()
             self.hider_see_moves(hider)
             print(hider.coordinate)
         pass
+
+    def hider_random_announcement(self, hider) -> tuple:
+        delta_row = random.randint(0, 6) - 3
+        delta_col = random.randint(0, 6) - 3
+        while not self.is_valid_cell(hider.coordinate[0] + delta_row, hider.coordinate[1] + delta_col):
+            delta_row = random.randint(0, 6) - 3
+            delta_col = random.randint(0, 6) - 3
+        return delta_row + hider.coordinate[0], delta_col + hider.coordinate[1]
+    def hiders_announce(self):
+        hiders = self.problem.hiders
+        self.announcement.clear()
+        self.path_to_cell = None
+        for hider in hiders:
+            self.announcement.append(self.hider_random_announcement(hider))
+        print(self.announcement)
     def run(self) -> list:
         time_count = 0
         while time_count < 1:
             time_count += 1
+            if time_count % 5 == 0:
+                self.hiders_announce()
             self.seeker_moves()
-            self.hider_moves()
+            self.hiders_move()
 
 
 
@@ -134,5 +216,5 @@ class Level4:
 
 # for debugging
 if __name__ == "__main__":
-    lv3 = Level3(file_path="map1_1.txt")
+    lv3 = Level3(file_path="test/map1_1.txt")
     lv3.run()

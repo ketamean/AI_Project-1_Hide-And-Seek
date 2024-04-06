@@ -221,7 +221,7 @@ if __name__ == "__main__":
     # Menu
     val = fe_menu.main_menu()
     if val == 1:
-        prob = problem.Problem(input_filename='map1_1.txt', allow_move_obstacles=False)
+        prob = problem.Problem(input_filename='test/map1_1.txt', allow_move_obstacles=False)
     elif val == 2:
         pass
     elif val == 3:
