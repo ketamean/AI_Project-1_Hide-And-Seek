@@ -1,6 +1,6 @@
 from player import *
 from obstacle import *
-
+from state import *
 class Problem:
     """
         The map of the game has size m x n (m rows, n columns). Each element is denoted by one of the following notations (each of which is either an integer or an object of Hider/Seeker)
@@ -26,9 +26,10 @@ class Problem:
             read the map from the given input file (the file was splited into lines)
             obtain the map in terms of a list
         """
-        self.map_list = []
+        self.map_list = []  # each cell is a list of components (a cell can contain multiple components)
         nrow, ncol = lines[0].split(sep=' ')
-
+        nrow = int(nrow)
+        ncol = int(ncol)
         self.hiders_coor = []
         for i in range(nrow):
             nums = lines[1 + i].split(sep=' ')
@@ -37,23 +38,27 @@ class Problem:
                 n = int(nums[j])
                 if n == 0:
                     # empty
-                    row.append(1000)
+                    row.append([1000])
                 elif n == 1:
                     # wall
-                    row.append(-1)
+                    row.append([-1])
                 elif n == 2:
                     # hider
                     self.hiders_coor.append( (i,j) )
-                    row.append(2)
+                    row.append([2])
                 elif n == 3:
                     # seeker
                     self.seeker_coor = (i,j)
-                    row.append(3)
+                    row.append([3])
             self.map_list.append( row )
 
     def __parse_input_file(self, buffer):
         lines = buffer.splitlines()
         nrow, ncol = lines[0].split(sep=' ')
+        nrow = int(nrow)
+        ncol = int(ncol)
+        self.num_row = nrow
+        self.num_col = ncol
         self.__parse_map(lines=lines)
 
         # list of coordinates of obstacles
@@ -65,7 +70,8 @@ class Problem:
         r_botright = 0
         c_botright = 0
         for row in lines[1 + nrow::]:
-            r_topleft, c_topleft, r_botright, c_botright = row
+            r_topleft, c_topleft, r_botright, c_botright = row.split(' ')
+            r_topleft, c_topleft, r_botright, c_botright = int(r_topleft), int(c_topleft), int(r_botright), int(c_botright)
             self.obstacles.append(
                 Obstacle(
                     r_topleft, c_topleft,
@@ -78,7 +84,7 @@ class Problem:
             input_filename: the file that contains the initial map. The file must be in the correct format
                 - The first line includes 2 positive integers N M (separated by a single space). The first number is number of rows, while the second one is number of columns
                 - The next N lines is the map, each of which contains M integers. These integers are also separated by single spaces
-                - The last line includes 4*k non-negative integers (separated by single spaces), divided into k groups, each of which in the format (id_row_topleft, id_col_topleft, id_row_bottomright, id_col_bottomright)
+                - The last lines includes 4*k non-negative integers (separated by single spaces), divided into k groups, each of which in the format (id_row_topleft, id_col_topleft, id_row_bottomright, id_col_bottomright)
             goal_checker: a function f(State) that returns True if the given state is the goal state; otherwise, returns False
         """
         """
@@ -105,17 +111,35 @@ class Problem:
             for obstacle in self.obstacles:
                 for i in range(obstacle.id_row_topleft, obstacle.id_row_botright + 1):
                     for j in range(obstacle.id_col_topleft, obstacle.id_col_botright + 1):
-                        self.map_list[i][j] = -1
-
+                        self.map_list[i][j] = [-1]
+        skelaton_map = []
+        for row in self.map_list:
+            tmp_row = []
+            for cell in row:
+                if -1 in cell:
+                    tmp_row.append(-1)
+                else:
+                    tmp_row.append(1000)
+            skelaton_map.append( tmp_row )
+        from copy import deepcopy
+        
         # now the map is static
         # assign Hider and Seeker objects to the map
         _r,_c = self.seeker_coor
         self.seeker = Seeker(coordinate=(_r,_c))
-        self.map_list[_r][_c] = self.seeker
+        self.seeker.origin_map = self.map_list
+        self.seeker.vision_map = deepcopy(skelaton_map)
+        self.seeker.heuristic_map = deepcopy(skelaton_map)
+        self.seeker.skelaton_map = deepcopy(skelaton_map)
+        self.map_list[_r][_c] = [self.seeker]
         for (r,c) in self.hiders_coor:
             hider = Hider(coordinate=(r,c))
+            hider.vision_map = deepcopy(skelaton_map)
+            hider.heuristic_map = deepcopy(skelaton_map)
+            hider.skelaton_map = deepcopy(skelaton_map)
+            hider.origin_map = self.map_list
             self.hiders.append( hider )
-            self.map_list[r][c] = hider
+            self.map_list[r][c] = [hider]
         
         del self.seeker_coor
         del self.hiders_coor
@@ -131,9 +155,11 @@ class Problem:
         """
         pass
     
-    def result(self, action: str, player: Hider | Seeker):
+    def result(self, origin_state: State, action: str, player: Hider | Seeker, h):
         """
-            applying the given action to the current map on the player
+            applying the given action to the origin state
+
+            arg h: a function to calculate heuristic value at the current level, given by developers
 
             change both map of the current instance problem and the map in pov of the player
         """
