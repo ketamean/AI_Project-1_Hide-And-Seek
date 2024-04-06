@@ -80,6 +80,7 @@ class Level1:
                         -1 not in self.problem.map_list[next_r][next_c]):
                         # Move in the alternative direction
                         seeker_path.append((next_r, next_c))
+                        print('alternative:', (next_r, next_c))
                         tmp_seeker.coordinate = (next_r, next_c)
                         break  # Exit the loop after finding a valid direction
 
@@ -203,9 +204,15 @@ class Level1:
                         cells = []
 
                         for row in range(cur_r - radius, cur_r + radius + 1):
+                            if row < 0:
+                                continue
+                            if row >= len(seeker.origin_map):
+                                break
                             for col in range(cur_c - radius, cur_c + radius + 1):
-                                if row < 0 or row >= len(seeker.origin_map) or col < 0 or col >= len(seeker.origin_map[0]):
+                                if col < 0:
                                     continue
+                                if col >= len(seeker.origin_map[0]):
+                                    break
                                 if -1 in seeker.origin_map[row][col]:
                                     # skip wall
                                     continue
@@ -214,25 +221,26 @@ class Level1:
                                         'coordinate': (row, col),
                                         'distance': abs(row - cur_r) + abs(col - cur_c)  # Manhattan distance
                                     })
-
                         if len(cells):
                             # Sort cells by Manhattan distance
                             cells.sort(key=lambda x: x['distance'])
-
+                            for x in cells:
+                                print('cells:', x['coordinate'])
                             for cell_data in cells:
                                 res = self.__move_towards_target(cell_data['coordinate'])
-                                for i in res:
-                                    print('manhattance', i)
                                 if res:
                                     for i, j in res:
-                                        print('manhattance', i, j)
+                                        print('res:', res)
                                         if (i, j != self.moves_stack[-1]):
                                             return [(i, j)]
-                            else:
-                                # No path found to any reachable unseen cell
-                                return False
-
                         radius += 1
+                        stop_flag = True
+                        # if (radius + cur_c < len(seeker.origin_map[0]) or radius + cur_c > 0) and (radius + cur_r < len(seeker.origin_map) or radius + cur_r > 0):
+                        #     radius += 1
+                        # else:
+                        #     # No path found to any reachable unseen cell
+                        #     return False
+
                 else:
                     # h != 0: choose the cell whose Manhattan distance from the previous cell is the largest
                     max_distance = -1
