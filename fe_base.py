@@ -10,7 +10,7 @@ PLAYER_SIZE = 20
 PLAYER_TILE_VISIBILITY = 3  # Tiles around player that will be visible
 
 # ----------------MAP STRUCTURES----------------
-prob = problem.Problem(input_filename='map1_1.txt', allow_move_obstacles=False)
+prob = problem.Problem(input_filename='test/map1_1.txt', allow_move_obstacles=False)
 MAP_NUM_COL = prob.num_col
 MAP_NUM_ROW = prob.num_row
 SCREEN_WIDTH = MAP_TILE_SIZE * MAP_NUM_COL
