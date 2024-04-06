@@ -125,6 +125,10 @@ class Player:
         for idrow in range(r - 1, r - self.radius - 1, -1):
             if idrow < 0:
                 break
+            if c - r+idrow < 0:
+                continue
+            if c - r+idrow >= len(self.origin_map[0]):
+                break
             if flag_meetwall:
                 self.vision_map[idrow][c - r+idrow] = False
                 continue
@@ -137,6 +141,10 @@ class Player:
         flag_meetwall = False
         for idrow in range(r + 1, r + self.radius + 1, + 1):
             if idrow >= len(self.origin_map):
+                break
+            if c - r+idrow < 0:
+                continue
+            if c - r+idrow >= len(self.origin_map[0]):
                 break
             if flag_meetwall:
                 self.vision_map[idrow][c - r+idrow] = False
@@ -153,6 +161,10 @@ class Player:
         for idrow in range(r - 1, r - self.radius - 1, -1):
             if idrow < 0:
                 break
+            if c + r-idrow < 0:
+                break
+            if c + r-idrow >= len(self.origin_map[0]):
+                continue
             if flag_meetwall:
                 self.vision_map[idrow][c + r-idrow] = False
                 continue
@@ -166,6 +178,10 @@ class Player:
         for idrow in range(r + 1, r + self.radius + 1, + 1):
             if idrow >= len(self.origin_map):
                 break
+            if c + r-idrow < 0:
+                break
+            if c + r-idrow >= len(self.origin_map[0]):
+                continue
             if flag_meetwall:
                 self.vision_map[idrow][c + r-idrow] = False
                 continue
@@ -192,11 +208,14 @@ class Player:
                 y0 = 0
                 x1 = c - idcol
                 y1 = r - idrow
+                if x1 == 0 and y1 == 0:
+                    continue
                 dx = x1
                 dy = y1
                 D = dy - 0.5*dx
+                
                 meet_wall = False
-                for i in range(self.radius - 1):
+                for i in range(self.radius):
                     if D > 0:
                         x0 += 1
                         y0 += 1
@@ -207,17 +226,17 @@ class Player:
                     if c - x0 < 0 or r - y0 < 0:
                         break
                     if meet_wall:
-                        if -1 in self.origin_map[c - x0][r - y0]:
-                            self.vision_map[c - x0][r - y0] = True
+                        if -1 in self.origin_map[r - y0][c - x0]:
+                            # wall
+                            self.vision_map[r - y0][c - x0] = True
                         else:
-                            self.vision_map[c - x0][r - y0] = False
+                            self.vision_map[r - y0][c - x0] = False
                     else:
-                        if -1 in self.origin_map[c - x0][r - y0]:
+                        if -1 in self.origin_map[r - y0][c - x0]:
                             # wall
                             meet_wall = True
-                        self.vision_map[c - x0][r - y0] = True
+                        self.vision_map[r - y0][c - x0] = True
                         
-        
         # above main diagonal
         # x: vertical - bottom up
         # y: horizontal - right to left
@@ -227,7 +246,6 @@ class Player:
             for idcol in range(c - 1, c - r+idrow, -1):
                 if idcol < 0:
                     break
-                print(f'cell[{idrow}][{idcol}]')
                 if isinstance(self.vision_map[idrow][idcol], bool):
                     # already determined
                     continue
@@ -235,6 +253,8 @@ class Player:
                 y0 = 0
                 x1 = r - idrow
                 y1 = c - idcol
+                if x1 == 0 and y1 == 0:
+                    continue
                 dx = x1
                 dy = y1
                 D = dy - 0.5*dx
@@ -250,15 +270,15 @@ class Player:
                     if r - x0 < 0 or c - y0 < 0:
                         break
                     if meet_wall:
-                        if -1 in self.origin_map[c - x0][r - y0]:
-                            self.vision_map[c - x0][r - y0] = True
+                        if -1 in self.origin_map[r - x0][c - y0]:
+                            self.vision_map[r - x0][c - y0] = True
                         else:
-                            self.vision_map[c - x0][r - y0] = False
+                            self.vision_map[r - x0][c - y0] = False
                     else:
-                        if -1 in self.origin_map[c - x0][r - y0]:
+                        if -1 in self.origin_map[r - x0][c - y0]:
                             # wall
                             meet_wall = True
-                        self.vision_map[c - x0][r - y0] = True
+                        self.vision_map[r - x0][c - y0] = True
 
     def __vision_topright_quarter(self):
         r,c = self.coordinate
@@ -278,11 +298,13 @@ class Player:
                 y0 = 0
                 x1 = idcol - c
                 y1 = r - idrow
+                if x1 == 0 and y1 == 0:
+                    continue
                 dx = x1
                 dy = y1
                 D = dy - 0.5*dx
                 meet_wall = False
-                for i in range(self.radius - 1):
+                for i in range(self.radius):
                     if D > 0:
                         x0 += 1
                         y0 += 1
@@ -293,18 +315,16 @@ class Player:
                     if c + x0 >= len(self.origin_map[0]) or r - y0 < 0:
                         break
                     if meet_wall:
-                        if -1 in self.origin_map[c - x0][r - y0]:
-                            self.vision_map[c - x0][r - y0] = True
+                        if -1 in self.origin_map[r - y0][c + x0]:
+                            self.vision_map[r - y0][c + x0] = True
                         else:
-                            self.vision_map[c - x0][r - y0] = False
+                            self.vision_map[r - y0][c + x0] = False
                     else:
-                        if -1 in self.origin_map[c - x0][r - y0]:
+                        if -1 in self.origin_map[r - y0][c + x0]:
                             # wall
                             meet_wall = True
-                            self.vision_map[c - x0][r - y0] = True
-                        else:
-                            self.vision_map[c - x0][r - y0] = False
-        
+                        self.vision_map[r - y0][c + x0] = True
+
         # above sub diagonal
         # x: vertical - bottom up
         # y: horizontal - right to left
@@ -312,7 +332,7 @@ class Player:
             if idrow < 0:
                 break
             for idcol in range(c + 1, c + r-idrow, +1):
-                if idcol < 0:
+                if idcol >= len(self.origin_map[0]):
                     break
                 if isinstance(self.vision_map[idrow][idcol], bool):
                     # already determined
@@ -321,6 +341,8 @@ class Player:
                 y0 = 0
                 x1 = r - idrow
                 y1 = idcol - c
+                if x1 == 0 and y1 == 0:
+                    continue
                 dx = x1
                 dy = y1
                 D = dy - 0.5*dx
@@ -336,17 +358,16 @@ class Player:
                     if r - x0 < 0 or c + y0 >= len(self.origin_map[0]):
                         break
                     if meet_wall:
-                        if -1 in self.origin_map[c - x0][r - y0]:
-                            self.vision_map[c - x0][r - y0] = True
+                        if -1 in self.origin_map[r - x0][c + y0]:
+                            self.vision_map[r - x0][c + y0] = True
                         else:
-                            self.vision_map[c - x0][r - y0] = False
+                            self.vision_map[r - x0][c + y0] = False
                     else:
-                        if -1 in self.origin_map[c - x0][r - y0]:
+                        if -1 in self.origin_map[r - x0][c + y0]:
                             # wall
                             meet_wall = True
-                            self.vision_map[c - x0][r - y0] = True
-                        else:
-                            self.vision_map[c - x0][r - y0] = False
+                        self.vision_map[r - x0][c + y0] = True
+        
 
     def __vision_botleft_quarter(self):
         r,c = self.coordinate
@@ -357,7 +378,7 @@ class Player:
             if idcol < 0:
                 break
             for idrow in range(r + 1, r + c - idcol, +1):
-                if idrow < 0:
+                if idrow >= len(self.origin_map):
                     break
                 if isinstance(self.vision_map[idrow][idcol], bool):
                     # already determined
@@ -366,11 +387,13 @@ class Player:
                 y0 = 0
                 x1 = c - idcol
                 y1 = idrow - r
+                if x1 == 0 and y1 == 0:
+                    continue
                 dx = x1
                 dy = y1
                 D = dy - 0.5*dx
                 meet_wall = False
-                for i in range(self.radius - 1):
+                for i in range(self.radius):
                     if D > 0:
                         x0 += 1
                         y0 += 1
@@ -381,18 +404,16 @@ class Player:
                     if c - x0 < 0 or r + y0 >= len(self.origin_map):
                         break
                     if meet_wall:
-                        if -1 in self.origin_map[c - x0][r - y0]:
-                            self.vision_map[c - x0][r - y0] = True
+                        if -1 in self.origin_map[r + y0][c - x0]:
+                            self.vision_map[r + y0][c - x0] = True
                         else:
-                            self.vision_map[c - x0][r - y0] = False
+                            self.vision_map[r + y0][c - x0] = False
                     else:
-                        if -1 in self.origin_map[c - x0][r - y0]:
+                        if -1 in self.origin_map[r + y0][c - x0]:
                             # wall
                             meet_wall = True
-                            self.vision_map[c - x0][r - y0] = True
-                        else:
-                            self.vision_map[c - x0][r - y0] = False
-        
+                        self.vision_map[r + y0][c - x0] = True
+
         # below sub diagonal
         # x: vertical - top down
         # y: horizontal - right to left
@@ -409,6 +430,8 @@ class Player:
                 y0 = 0
                 x1 = idrow - r
                 y1 = c - idcol
+                if x1 == 0 and y1 == 0:
+                    continue
                 dx = x1
                 dy = y1
                 D = dy - 0.5*dx
@@ -424,41 +447,41 @@ class Player:
                     if r + x0 >= len(self.origin_map) or c - y0 < 0:
                         break
                     if meet_wall:
-                        if -1 in self.origin_map[c - x0][r - y0]:
-                            self.vision_map[c - x0][r - y0] = True
+                        if -1 in self.origin_map[r + x0][c - y0]:
+                            self.vision_map[r + x0][c - y0] = True
                         else:
-                            self.vision_map[c - x0][r - y0] = False
+                            self.vision_map[r + x0][c - y0] = False
                     else:
-                        if -1 in self.origin_map[c - x0][r - y0]:
+                        if -1 in self.origin_map[r + x0][c - y0]:
                             # wall
                             meet_wall = True
-                            self.vision_map[c - x0][r - y0] = True
-                        else:
-                            self.vision_map[c - x0][r - y0] = False
+                        self.vision_map[r + x0][c - y0] = True
 
     def __vision_botright_quarter(self):
         r,c = self.coordinate
         # above sub diagonal
         # x: horizontal - left to right
         # y: vertical - top down
-        for idcol in range(c - 2, c - self.radius - 1, -1):
-            if idcol < 0:
+        for idcol in range(c + 2, c + self.radius + 1, +1):
+            if idcol >= len(self.origin_map[0]):
                 break
-            for idrow in range(r + 1, r + c - idcol, +1):
-                if idrow < 0:
+            for idrow in range(r + 1, r + idcol - c, +1):
+                if idrow >= len(self.origin_map):
                     break
                 if isinstance(self.vision_map[idrow][idcol], bool):
                     # already determined
                     continue
                 x0 = 0
                 y0 = 0
-                x1 = c - idcol
-                y1 = r - idrow
+                x1 = idcol - c
+                y1 = idrow - r
+                if x1 == 0 and y1 == 0:
+                    continue
                 dx = x1
                 dy = y1
                 D = dy - 0.5*dx
                 meet_wall = False
-                for i in range(self.radius - 1):
+                for i in range(self.radius):
                     if D > 0:
                         x0 += 1
                         y0 += 1
@@ -469,26 +492,24 @@ class Player:
                     if c + x0 >= len(self.origin_map[0]) or r + y0 >= len(self.origin_map):
                         break
                     if meet_wall:
-                        if -1 in self.origin_map[c - x0][r - y0]:
-                            self.vision_map[c - x0][r - y0] = True
+                        if -1 in self.origin_map[r + y0][c + x0]:
+                            self.vision_map[r + y0][c + x0] = True
                         else:
-                            self.vision_map[c - x0][r - y0] = False
+                            self.vision_map[r + y0][c + x0] = False
                     else:
-                        if -1 in self.origin_map[c - x0][r - y0]:
+                        if -1 in self.origin_map[r + y0][c + x0]:
                             # wall
                             meet_wall = True
-                            self.vision_map[c - x0][r - y0] = True
-                        else:
-                            self.vision_map[c - x0][r - y0] = False
-        
+                        self.vision_map[r + y0][c + x0] = True
+
         # below sub diagonal
         # x: vertical - top down
         # y: horizontal - left to right
         for idrow in range(r + 2, r + self.radius + 1, +1):
             if idrow >= len(self.origin_map):
                 break
-            for idcol in range(c - 1, c + r - idrow, -1):
-                if idcol < 0:
+            for idcol in range(c + 1, c + idrow - r, +1):
+                if idcol >= len(self.origin_map[0]):
                     break
                 if isinstance(self.vision_map[idrow][idcol], bool):
                     # already determined
@@ -497,6 +518,8 @@ class Player:
                 y0 = 0
                 x1 = idrow - r
                 y1 = idcol - c
+                if x1 == 0 and y1 == 0:
+                    continue
                 dx = x1
                 dy = y1
                 D = dy - 0.5*dx
@@ -512,18 +535,15 @@ class Player:
                     if r + x0 >= len(self.origin_map) or c + y0 >= len(self.origin_map[0]):
                         break
                     if meet_wall:
-                        if -1 in self.origin_map[c - x0][r - y0]:
-                            self.vision_map[c - x0][r - y0] = True
+                        if -1 in self.origin_map[r + x0][c + y0]:
+                            self.vision_map[r + x0][c + y0] = True
                         else:
-                            self.vision_map[c - x0][r - y0] = False
+                            self.vision_map[r + x0][c + y0] = False
                     else:
-                        if -1 in self.origin_map[c - x0][r - y0]:
+                        if -1 in self.origin_map[r + x0][c + y0]:
                             # wall
                             meet_wall = True
-                            self.vision_map[c - x0][r - y0] = True
-                        else:
-                            self.vision_map[c - x0][r - y0] = False
-
+                        self.vision_map[r + x0][c + y0] = True
     def vision(self):
         """
             reset self.vision_map and define new viewable cells
@@ -544,6 +564,9 @@ class Player:
         self.__vision_botleft_quarter()
         self.__vision_botright_quarter()
 
+        r,c = self.coordinate
+        self.vision_map[r][c] = True
+
 class State:
     """
         each state keeps the coordinate of a particular cell in the map, g, h, f (where h = Manhattan distance heuristic, g = cummulative path cost, f = g + h)
@@ -553,13 +576,10 @@ class State:
         this is an auxiliary class for BE (solving problem in levels).
         for each player object (Hider or Seeker), there is a list that contains all the states (or optimally N latest state)
     """
-    def __init__(self, coordinate_from: tuple, coordinate_to: tuple, player: Player, g:int, h: int, f: int) -> None:
+    def __init__(self, coordinate_from: tuple, coordinate_to: tuple, player: Player) -> None:
         self.from_row, self.from_col = coordinate_from
         self.to_row, self.to_col = coordinate_to
         self.player = player
-        self.g = g
-        self.h = h
-        self.f = f if f else self.g + self.h
 
 class Hider(Player):
     """
@@ -598,12 +618,44 @@ class Hider(Player):
     
     def announce(self, map: list):
         """
-            choose a sufficiently good position to raise an announcement
+            raise an announcement randomly
 
-            return the coordinate (id_row, id_col) of the cell where announcement raised
+            return the announcement object
         """
-        pass
-    
+        from random import randint
+        lwr_r, upr_r = self.coordinate  # lower bound and upper bound of row idx
+        lwr_c, upr_c = self.coordinate  # lower bound and upper bound of col idx
+        for i in range(-self.radius, self.radius + 1, +1):
+            lwr_r += i
+            if lwr_r >= 0:
+                break
+        for i in range(self.radius, self.radius - 1, -1):
+            upr_r += i
+            if upr_r < len(self.origin_map):
+                break
+        for i in range(-self.radius, self.radius + 1, +1):
+            lwr_c += i
+            if lwr_c >= 0:
+                break
+        for i in range(self.radius, self.radius - 1, -1):
+            upr_c += i
+            if upr_c < len(self.origin_map[0]):
+                break
+
+        r,c = randint(lwr_r, upr_r), randint(lwr_c, upr_c)
+        res = Announcement(
+            coordinate=(r,c),
+            hider=self
+        )
+        if 1000 in self.origin_map[r][c]:
+            # empty cell
+            self.origin_map[r][c] = [ res ]
+        else:
+            # non-empty cell
+            self.origin_map[r][c].append( res )
+            
+        return res
+
     @staticmethod
     def move_obstacles(map: list, obstacles: list):
         """
