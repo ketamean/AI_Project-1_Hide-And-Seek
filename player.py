@@ -21,7 +21,7 @@ class Player:
         self.origin_map = None
         self.vision_map = None
         self.heuristic_map = None
-        self.skelaton_map = None        # skelaton map which includes walls only
+        self.skeleton_map = None        # skeleton map which includes walls only
                                         # -1 for walls, 1000 for empty cells
 
     # def result(self, origin_state: State, action: str, map: list):
@@ -71,7 +71,11 @@ class Player:
             if idcol < 0:
                 break
             if flag_meetwall:
-                self.vision_map[r][idcol] = False
+                if -1 in self.origin_map[r][idcol]:
+                    # is wall
+                    self.vision_map[r][idcol] = True
+                else:
+                    self.vision_map[r][idcol] = False
                 continue
             if -1 in self.origin_map[r][idcol]:
                 flag_meetwall = True
@@ -83,7 +87,10 @@ class Player:
             if idcol >= len(self.origin_map[0]):
                 break
             if flag_meetwall:
-                self.vision_map[r][idcol] = False
+                if -1 in self.origin_map[r][idcol]:
+                    self.vision_map[r][idcol] = True
+                else:
+                    self.vision_map[r][idcol] = False
                 continue
             if -1 in self.origin_map[r][idcol]:
                 flag_meetwall = True
@@ -97,7 +104,10 @@ class Player:
             if idrow < 0:
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c] = False
+                if -1 in self.origin_map[idrow][c]:
+                    self.vision_map[idrow][c] = True
+                else:
+                    self.vision_map[idrow][c] = False
                 continue
             
             if -1 in self.origin_map[idrow][c]:
@@ -111,7 +121,10 @@ class Player:
             if idrow >= len(self.origin_map):
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c] = False
+                if -1 in self.origin_map[idrow][c]:
+                    self.vision_map[idrow][c] = True
+                else:
+                    self.vision_map[idrow][c] = False
                 continue
             
             if -1 in self.origin_map[idrow][c]:
@@ -130,7 +143,10 @@ class Player:
             if c - r+idrow >= len(self.origin_map[0]):
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c - r+idrow] = False
+                if -1 in self.origin_map[idrow][c - r+idrow]:
+                    self.vision_map[idrow][c - r+idrow] = True
+                else:
+                    self.vision_map[idrow][c - r+idrow] = False
                 continue
             
             if -1 in self.origin_map[idrow][c - r+idrow]:
@@ -147,7 +163,10 @@ class Player:
             if c - r+idrow >= len(self.origin_map[0]):
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c - r+idrow] = False
+                if -1 in self.origin_map[idrow][c - r+idrow]:
+                    self.vision_map[idrow][c - r+idrow] = True
+                else:
+                    self.vision_map[idrow][c - r+idrow] = False
                 continue
             
             if -1 in self.origin_map[idrow][c - r+idrow]:
@@ -166,7 +185,10 @@ class Player:
             if c + r-idrow >= len(self.origin_map[0]):
                 continue
             if flag_meetwall:
-                self.vision_map[idrow][c + r-idrow] = False
+                if -1 in self.origin_map[idrow][c + r-idrow]:
+                    self.vision_map[idrow][c + r-idrow] = True
+                else:
+                    self.vision_map[idrow][c + r-idrow] = False
                 continue
             
             if -1 in self.origin_map[idrow][c + r-idrow]:
@@ -183,7 +205,10 @@ class Player:
             if c + r-idrow >= len(self.origin_map[0]):
                 continue
             if flag_meetwall:
-                self.vision_map[idrow][c + r-idrow] = False
+                if -1 in self.origin_map[idrow][c + r-idrow]:
+                    self.vision_map[idrow][c + r-idrow] = True
+                else:
+                    self.vision_map[idrow][c + r-idrow] = False
                 continue
             
             if -1 in self.origin_map[idrow][c + r-idrow]:
@@ -229,6 +254,8 @@ class Player:
                         if -1 in self.origin_map[r - y0][c - x0]:
                             # wall
                             self.vision_map[r - y0][c - x0] = True
+                        elif isinstance(self.vision_map[r - y0][c - x0], bool):
+                            self.vision_map[r - y0][c - x0] = self.vision_map[r - y0][c - x0] or False
                         else:
                             self.vision_map[r - y0][c - x0] = False
                     else:
@@ -272,6 +299,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r - x0][c - y0]:
                             self.vision_map[r - x0][c - y0] = True
+                        elif isinstance(self.vision_map[r - x0][c - y0], bool):
+                            self.vision_map[r - x0][c - y0] = self.vision_map[r - x0][c - y0] or False
                         else:
                             self.vision_map[r - x0][c - y0] = False
                     else:
@@ -317,6 +346,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r - y0][c + x0]:
                             self.vision_map[r - y0][c + x0] = True
+                        elif isinstance(self.vision_map[r - y0][c + x0], bool):
+                            self.vision_map[r - y0][c + x0] = self.vision_map[r - y0][c + x0] or False
                         else:
                             self.vision_map[r - y0][c + x0] = False
                     else:
@@ -360,6 +391,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r - x0][c + y0]:
                             self.vision_map[r - x0][c + y0] = True
+                        elif isinstance(self.vision_map[r - x0][c + y0], bool):
+                            self.vision_map[r - x0][c + y0] = self.vision_map[r - x0][c + y0] or False
                         else:
                             self.vision_map[r - x0][c + y0] = False
                     else:
@@ -449,6 +482,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r + x0][c - y0]:
                             self.vision_map[r + x0][c - y0] = True
+                        elif isinstance(self.vision_map[r + x0][c - y0], bool):
+                            self.vision_map[r + x0][c - y0] = self.vision_map[r + x0][c - y0] or False
                         else:
                             self.vision_map[r + x0][c - y0] = False
                     else:
@@ -494,6 +529,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r + y0][c + x0]:
                             self.vision_map[r + y0][c + x0] = True
+                        elif isinstance(self.vision_map[r + y0][c + x0], bool):
+                            self.vision_map[r + y0][c + x0] = self.vision_map[r + y0][c + x0] or False
                         else:
                             self.vision_map[r + y0][c + x0] = False
                     else:
@@ -534,9 +571,12 @@ class Player:
                         D = dy
                     if r + x0 >= len(self.origin_map) or c + y0 >= len(self.origin_map[0]):
                         break
+                    
                     if meet_wall:
                         if -1 in self.origin_map[r + x0][c + y0]:
                             self.vision_map[r + x0][c + y0] = True
+                        elif isinstance(self.vision_map[r + x0][c + y0], bool):
+                            self.vision_map[r + x0][c + y0] = self.vision_map[r + x0][c + y0] or False
                         else:
                             self.vision_map[r + x0][c + y0] = False
                     else:
@@ -551,7 +591,7 @@ class Player:
             returns nothing
         """
         from copy import deepcopy
-        self.vision_map = deepcopy(self.skelaton_map)
+        self.vision_map = deepcopy(self.skeleton_map)
         # 4 main lines
         self.__vision_row()
         self.__vision_col()
@@ -589,7 +629,7 @@ class Hider(Player):
 
         there is an attribute called self.signature (a string) used to distinguish between a Hider and a Seeker. For a hider, signature = 'Hider' (with capitalized H)
 
-        hider keeps a skelaton version of the map, which is the map in the pov of the hider (already known walls)
+        hider keeps a skeleton version of the map, which is the map in the pov of the hider (already known walls)
     """
     _cnt = 0        # count for ID
     def __init__(self, coordinate: tuple, radius = 3, step_to_announcement = 5) -> None:
@@ -599,10 +639,11 @@ class Hider(Player):
         """
         from copy import deepcopy
         super().__init__(coordinate=coordinate, radius=radius, h = None)
-        Hider._cnt += 1
         self.id = Hider._cnt            # id of the hider to differentiate hiders
+                                        # also the id of hider in list Problem.hiders
+        Hider._cnt += 1
         self.step_to_announcement = step_to_announcement        # number of steps between 2 announcements           
-        self.count_to_announcement = self.step_to_announcement  # if == 0, raise an announcement reset to step_to_announcement 
+        self.count_to_announcement = 0  # if == 0, raise an announcement reset to step_to_announcement 
 
         self.frontier = {
             # pairs of (idrow, idcol): node
@@ -616,33 +657,36 @@ class Hider(Player):
     def reset_id_counter():
         Hider._cnt = 0
     
-    def announce(self, map: list):
+    def announce(self):
         """
             raise an announcement randomly
 
-            return the announcement object
+            return the announcement object, and you MUST put it in the map
         """
         from random import randint
+        cur_r, cur_c = self.coordinate
         lwr_r, upr_r = self.coordinate  # lower bound and upper bound of row idx
         lwr_c, upr_c = self.coordinate  # lower bound and upper bound of col idx
-        for i in range(-self.radius, self.radius + 1, +1):
-            lwr_r += i
+        for i in range(cur_r-self.radius, cur_r + 1, +1):
+            lwr_r = i
             if lwr_r >= 0:
                 break
-        for i in range(self.radius, self.radius - 1, -1):
-            upr_r += i
+        for i in range(cur_r+self.radius, cur_r - 1, -1):
+            upr_r = i
             if upr_r < len(self.origin_map):
                 break
-        for i in range(-self.radius, self.radius + 1, +1):
-            lwr_c += i
+        for i in range(cur_c-self.radius, cur_c + 1, +1):
+            lwr_c = i
             if lwr_c >= 0:
                 break
-        for i in range(self.radius, self.radius - 1, -1):
-            upr_c += i
+        for i in range(cur_c+self.radius, cur_c - 1, -1):
+            upr_c = i
             if upr_c < len(self.origin_map[0]):
                 break
-
+        # while True:
         r,c = randint(lwr_r, upr_r), randint(lwr_c, upr_c)
+            # if self.skeleton_map[r][c] != -1:
+            #     break
         res = Announcement(
             coordinate=(r,c),
             hider=self
@@ -701,6 +745,7 @@ class Announcement:
         """
         self.coordinate = coordinate
         self.hider = hider
+        self.signature = 'Announcement'
 
 class Seeker(Player):
     """
@@ -710,7 +755,7 @@ class Seeker(Player):
 
         there is an attribute called self.signature (a string) used to distinguish between a Hider and a Seeker. For a seeker, signature = 'Seeker' (with capitalized S)
 
-        seeker keeps a skelaton version of the map, which is the map in the pov of the seeker (already known walls)
+        seeker keeps a skeleton version of the map, which is the map in the pov of the seeker (already known walls)
     """
     def __init__(self, coordinate: tuple, radius = 3) -> None:
         """
