@@ -10,7 +10,7 @@ seeker = prob.seeker
 
 seeker.vision()
 
-# for row in seeker.skelaton_map:
+# for row in seeker.skeleton_map:
 #     for cell in row:
 #         if cell == -1:
 #             print('x', end=' ')
