@@ -71,7 +71,11 @@ class Player:
             if idcol < 0:
                 break
             if flag_meetwall:
-                self.vision_map[r][idcol] = False
+                if -1 in self.origin_map[r][idcol]:
+                    # is wall
+                    self.vision_map[r][idcol] = True
+                else:
+                    self.vision_map[r][idcol] = False
                 continue
             if -1 in self.origin_map[r][idcol]:
                 flag_meetwall = True
@@ -83,7 +87,10 @@ class Player:
             if idcol >= len(self.origin_map[0]):
                 break
             if flag_meetwall:
-                self.vision_map[r][idcol] = False
+                if -1 in self.origin_map[r][idcol]:
+                    self.vision_map[r][idcol] = True
+                else:
+                    self.vision_map[r][idcol] = False
                 continue
             if -1 in self.origin_map[r][idcol]:
                 flag_meetwall = True
@@ -97,7 +104,10 @@ class Player:
             if idrow < 0:
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c] = False
+                if -1 in self.origin_map[idrow][c]:
+                    self.vision_map[idrow][c] = True
+                else:
+                    self.vision_map[idrow][c] = False
                 continue
             
             if -1 in self.origin_map[idrow][c]:
@@ -111,7 +121,10 @@ class Player:
             if idrow >= len(self.origin_map):
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c] = False
+                if -1 in self.origin_map[idrow][c]:
+                    self.vision_map[idrow][c] = True
+                else:
+                    self.vision_map[idrow][c] = False
                 continue
             
             if -1 in self.origin_map[idrow][c]:
@@ -130,7 +143,10 @@ class Player:
             if c - r+idrow >= len(self.origin_map[0]):
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c - r+idrow] = False
+                if -1 in self.origin_map[idrow][c - r+idrow]:
+                    self.vision_map[idrow][c - r+idrow] = True
+                else:
+                    self.vision_map[idrow][c - r+idrow] = False
                 continue
             
             if -1 in self.origin_map[idrow][c - r+idrow]:
@@ -147,7 +163,10 @@ class Player:
             if c - r+idrow >= len(self.origin_map[0]):
                 break
             if flag_meetwall:
-                self.vision_map[idrow][c - r+idrow] = False
+                if -1 in self.origin_map[idrow][c - r+idrow]:
+                    self.vision_map[idrow][c - r+idrow] = True
+                else:
+                    self.vision_map[idrow][c - r+idrow] = False
                 continue
             
             if -1 in self.origin_map[idrow][c - r+idrow]:
@@ -166,7 +185,10 @@ class Player:
             if c + r-idrow >= len(self.origin_map[0]):
                 continue
             if flag_meetwall:
-                self.vision_map[idrow][c + r-idrow] = False
+                if -1 in self.origin_map[idrow][c + r-idrow]:
+                    self.vision_map[idrow][c + r-idrow] = True
+                else:
+                    self.vision_map[idrow][c + r-idrow] = False
                 continue
             
             if -1 in self.origin_map[idrow][c + r-idrow]:
@@ -183,7 +205,10 @@ class Player:
             if c + r-idrow >= len(self.origin_map[0]):
                 continue
             if flag_meetwall:
-                self.vision_map[idrow][c + r-idrow] = False
+                if -1 in self.origin_map[idrow][c + r-idrow]:
+                    self.vision_map[idrow][c + r-idrow] = True
+                else:
+                    self.vision_map[idrow][c + r-idrow] = False
                 continue
             
             if -1 in self.origin_map[idrow][c + r-idrow]:
