@@ -254,6 +254,8 @@ class Player:
                         if -1 in self.origin_map[r - y0][c - x0]:
                             # wall
                             self.vision_map[r - y0][c - x0] = True
+                        elif isinstance(self.vision_map[r - y0][c - x0], bool):
+                            self.vision_map[r - y0][c - x0] = self.vision_map[r - y0][c - x0] or False
                         else:
                             self.vision_map[r - y0][c - x0] = False
                     else:
@@ -297,6 +299,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r - x0][c - y0]:
                             self.vision_map[r - x0][c - y0] = True
+                        elif isinstance(self.vision_map[r - x0][c - y0], bool):
+                            self.vision_map[r - x0][c - y0] = self.vision_map[r - x0][c - y0] or False
                         else:
                             self.vision_map[r - x0][c - y0] = False
                     else:
@@ -342,6 +346,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r - y0][c + x0]:
                             self.vision_map[r - y0][c + x0] = True
+                        elif isinstance(self.vision_map[r - y0][c + x0], bool):
+                            self.vision_map[r - y0][c + x0] = self.vision_map[r - y0][c + x0] or False
                         else:
                             self.vision_map[r - y0][c + x0] = False
                     else:
@@ -385,6 +391,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r - x0][c + y0]:
                             self.vision_map[r - x0][c + y0] = True
+                        elif isinstance(self.vision_map[r - x0][c + y0], bool):
+                            self.vision_map[r - x0][c + y0] = self.vision_map[r - x0][c + y0] or False
                         else:
                             self.vision_map[r - x0][c + y0] = False
                     else:
@@ -474,6 +482,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r + x0][c - y0]:
                             self.vision_map[r + x0][c - y0] = True
+                        elif isinstance(self.vision_map[r + x0][c - y0], bool):
+                            self.vision_map[r + x0][c - y0] = self.vision_map[r + x0][c - y0] or False
                         else:
                             self.vision_map[r + x0][c - y0] = False
                     else:
@@ -519,6 +529,8 @@ class Player:
                     if meet_wall:
                         if -1 in self.origin_map[r + y0][c + x0]:
                             self.vision_map[r + y0][c + x0] = True
+                        elif isinstance(self.vision_map[r + y0][c + x0], bool):
+                            self.vision_map[r + y0][c + x0] = self.vision_map[r + y0][c + x0] or False
                         else:
                             self.vision_map[r + y0][c + x0] = False
                     else:
@@ -559,9 +571,12 @@ class Player:
                         D = dy
                     if r + x0 >= len(self.origin_map) or c + y0 >= len(self.origin_map[0]):
                         break
+                    
                     if meet_wall:
                         if -1 in self.origin_map[r + x0][c + y0]:
                             self.vision_map[r + x0][c + y0] = True
+                        elif isinstance(self.vision_map[r + x0][c + y0], bool):
+                            self.vision_map[r + x0][c + y0] = self.vision_map[r + x0][c + y0] or False
                         else:
                             self.vision_map[r + x0][c + y0] = False
                     else:
@@ -668,10 +683,10 @@ class Hider(Player):
             upr_c = i
             if upr_c < len(self.origin_map[0]):
                 break
-        while True:
-            r,c = randint(lwr_r, upr_r), randint(lwr_c, upr_c)
-            if self.skeleton_map[r][c] != -1:
-                break
+        # while True:
+        r,c = randint(lwr_r, upr_r), randint(lwr_c, upr_c)
+            # if self.skeleton_map[r][c] != -1:
+            #     break
         res = Announcement(
             coordinate=(r,c),
             hider=self
