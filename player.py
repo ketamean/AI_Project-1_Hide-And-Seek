@@ -599,10 +599,11 @@ class Hider(Player):
         """
         from copy import deepcopy
         super().__init__(coordinate=coordinate, radius=radius, h = None)
-        Hider._cnt += 1
         self.id = Hider._cnt            # id of the hider to differentiate hiders
+                                        # also the id of hider in list Problem.hiders
+        Hider._cnt += 1
         self.step_to_announcement = step_to_announcement        # number of steps between 2 announcements           
-        self.count_to_announcement = self.step_to_announcement  # if == 0, raise an announcement reset to step_to_announcement 
+        self.count_to_announcement = 0  # if == 0, raise an announcement reset to step_to_announcement 
 
         self.frontier = {
             # pairs of (idrow, idcol): node
@@ -616,11 +617,11 @@ class Hider(Player):
     def reset_id_counter():
         Hider._cnt = 0
     
-    def announce(self, map: list):
+    def announce(self):
         """
             raise an announcement randomly
 
-            return the announcement object
+            return the announcement object, and you MUST put it in the map
         """
         from random import randint
         lwr_r, upr_r = self.coordinate  # lower bound and upper bound of row idx
@@ -641,8 +642,10 @@ class Hider(Player):
             upr_c += i
             if upr_c < len(self.origin_map[0]):
                 break
-
-        r,c = randint(lwr_r, upr_r), randint(lwr_c, upr_c)
+        while True:
+            r,c = randint(lwr_r, upr_r), randint(lwr_c, upr_c)
+            if self.skelaton_map[r][c] != -1:
+                break
         res = Announcement(
             coordinate=(r,c),
             hider=self
