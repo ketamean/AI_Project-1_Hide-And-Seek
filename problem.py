@@ -134,6 +134,8 @@ class Problem:
         self.seeker.heuristic_map = deepcopy(self.skelaton_map)
         self.seeker.skelaton_map = deepcopy(self.skelaton_map)
         self.map_list[_r][_c] = [self.seeker]
+
+        Hider.reset_id_counter()
         for (r,c) in self.hiders_coor:
             hider = Hider(coordinate=(r,c))
             hider.vision_map = deepcopy(self.skelaton_map)
@@ -141,7 +143,7 @@ class Problem:
             hider.skelaton_map = deepcopy(self.skelaton_map)
             hider.origin_map = self.map_list
             self.hiders.append( hider )
-            self.map_list[r][c] = [hider]
+            self.map_list[r][c] = [ hider ]
         
         del self.seeker_coor
         del self.hiders_coor
