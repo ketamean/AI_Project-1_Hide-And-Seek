@@ -169,14 +169,14 @@ def main():
     # NOTE: Map tile ids should be probably loaded from an external map file (by definition: 0: empty, 1: obstacle (
     # yellow), 2: wall (static, black)) Load map tiles (generating 2 random tile ids for testing)
     hiders = []
+    seeker = Seeker(0, 0)
     for i in range(0, prob.num_row):
         for j in range(0, prob.num_col):
             if prob.map_list[i][j][0] == 1000:
                 map.tileIds[i * prob.num_col + j] = 0
             elif prob.map_list[i][j][0] == -1:
                 map.tileIds[i * prob.num_col + j] = 2
-            elif type(prob.map_list[i][j][0]) == player.Seeker:
-                seeker = Seeker(i, j)
+
 
     # Seeker position in the map (default tile: 0,0)
     # Create a render texture to store the fog of war

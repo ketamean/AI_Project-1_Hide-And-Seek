@@ -13,7 +13,7 @@ class Level3:
         self.problem = cprob.Problem(input_filename=file_path, allow_move_obstacles=False)
         self.problem.seeker.origin_map = self.problem.map_list
         self.seeker_seen_cells = set()
-        self.path_save = [tuple]
+        self.path_save = []
         self.seeker_visited_cells = set()
         self.announcement = []
         self.path_to_cell = None
@@ -194,6 +194,8 @@ class Level3:
                 else:
                     is_go_back = True
                     new_cell = self.path_save[-1]
+                    # with open("test/debug.txt", "w") as file:
+                    #     file.(str(new_cell) + "\n")
                     self.path_save.pop()
                     self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
                     seeker.coordinate = new_cell
@@ -276,12 +278,9 @@ class Level3:
         return all_states
 
 
-
-
-
-
 class Level4:
     pass
+
 
 # for debugging
 if __name__ == "__main__":
