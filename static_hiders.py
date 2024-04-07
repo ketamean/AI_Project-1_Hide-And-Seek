@@ -92,37 +92,42 @@ class Level2:
         """
         seeker = self.problem.seeker
         cur_r, cur_c = seeker.coordinate
+
+        # check the current cell
         for element in self.problem.map_list[cur_r][cur_c]:
             if not isinstance(element, int) and element.signature == 'Hider':
-                # a hider is found
-                # remove it from list of hiders in Problem
-                # remove it from the Problem.map_list
-                # remove its coordinate from visible_hider_coor list
-                # remove all of its announcements from list of visible announcements and announcements_on_map
+                # contains a Hider
                 self.total_hiders -= 1
                 seeker.score += 20
-                print('found', (cur_r, cur_c))
+
+                # remove hider's coordinate from visible_hider_coor list
                 if (cur_r, cur_c) in self.visibile_hider_coor:
                     self.visibile_hider_coor.remove( (cur_r, cur_c) )
+
+                # remove hider from the problem
                 self.problem.hiders.remove(element)
                 self.problem.map_list[cur_r][cur_c].remove(element)
                 if len(self.problem.map_list[cur_r][cur_c]) == 0:
                     self.problem.map_list[cur_r][cur_c] = [1000]
-                # remove all of its announcements in the list of visible announcements
+                
+                # delete all of its announcements
                 for ann in self.visible_announcements:
                     if ann['hider_id'] == element.id:
                         self.visible_announcements.remove( ann )
                 if self.current_announcement and self.current_announcement['hider_id'] == element.id:
                     self.current_announcement = None
                     self.seeker_path_for_announcement = []
+                
                 for ann in self.announcements_on_map:
                     if ann.hider.id == element.id:
                         self.announcements_on_map.remove( ann )
+                
                 break
 
     def __seeker_check_new_hider_and_announcement(self):
         """
             check the vision map from current tile to find new hiders and announcements in the field of view 
+            returns nothing
         """
         from copy import deepcopy
         seeker = self.problem.seeker
@@ -147,21 +152,20 @@ class Level2:
                     continue
                 if idcol >= len(visionmap[0]):
                     break
-
                 if visionmap[idrow][idcol] == True: # cell is visible
-                    # mark cell as seen
                     self.seen_map[idrow][idcol] = True
                     if -1 in self.problem.map_list[idrow][idcol]:
                         self.reachable[idrow][idcol] = False
                     else:
                         # as it is visible and it is not a wall, it is reachable
                         self.reachable[idrow][idcol] = True
+                
+                # check element in this cell
                 for component in self.problem.map_list[idrow][idcol]:
-                    if not isinstance(component, int):
-                        # not -1 or 1000 => it is an object
-                        if component.signature == 'Hider' and visionmap[idrow][idcol] == True:
-                            # is a VISIBLE hider
+                    if not isinstance(component, int): # not -1 or 1000 => it is an object
+                        if component.signature == 'Hider' and visionmap[idrow][idcol] == True: # is a VISIBLE hider
                             if not (component.coordinate in self.visibile_hider_coor):
+                                # if has not been seen
                                 self.visibile_hider_coor.append( component.coordinate )
                                 path = astar.astar(
                                     grid=self.astar_map,
@@ -170,25 +174,24 @@ class Level2:
                                 )
                                 if path == None:
                                     self.reachable[component.coordinate[0]][component.coordinate[1]] = False
-                                elif len(self.seeker_path_to_hider) == 0 or len(path) < len(self.seeker_path_to_hider):
+                                elif len(self.seeker_path_to_hider) > 0 and len(path) < len(self.seeker_path_to_hider):
+                                    # if this path is better than the current path
                                     self.seeker_path_to_hider = path
-
-                            # for hider in self.problem.hiders:
-                            #     if hider.coordinate == component.coordinate and component.coordinate not in self.visibile_hider_coor:
-                            #         self.visibile_hider_coor.append( (component.coordinate[0], component.coordinate[1]) )
-                            #         break
                         elif component.signature == 'Announcement':
+                            # check if announcement has been seen
                             existed = False
                             for ann in self.visible_announcements:
                                 if component.coordinate == ann['coordinate']:
                                     existed = not existed # TRUE
                                     break
-                            if not existed:
+                            if not existed: # => new announcement
                                 new_ann = {
                                     'coordinate': (component.coordinate[0], component.coordinate[1]),
-                                    'hider_id': component.hider.id
+                                    'hider_id': component.hider.id,
                                 }
-                                self.visible_announcements.append( new_ann )
+                                
+
+                                # check if new path is better than current path
                                 path = astar.astar(
                                     grid=self.astar_map,
                                     start_coor=(cur_r, cur_c),
@@ -196,18 +199,18 @@ class Level2:
                                 )
                                 if path == None:
                                     self.reachable[component.coordinate[0]][component.coordinate[1]] = False
-                                elif self.current_announcement != None and (len(self.seeker_path_for_announcement) == 0 or len(path) < len(self.seeker_path_for_announcement)):
-                                    self.visible_announcements.pop()
+                                elif self.current_announcement != None and len(self.seeker_path_for_announcement) > 0 and len(path) < len(self.seeker_path_for_announcement):
                                     self.visible_announcements.append( self.current_announcement )
                                     self.current_announcement = new_ann
                                     self.seeker_path_for_announcement = path
-                                    
+                                else:
+                                    self.visible_announcements.append( new_ann )
 
     def __seeker_choose_cell_on_path_to_hider(self):
         """
             assuming that seeker is on the way to a hider
 
-            return coordinate of the cell to go next and POP IT OUT OF THE PATH TO HIDER
+            return coordinate of the cell to go next
         """
         cur_r, cur_c = self.problem.seeker.coordinate
         R,C = self.seeker_path_to_hider[0]
@@ -244,13 +247,15 @@ class Level2:
                 start_coor=(cur_r, cur_c),
                 goal_coor=nexthider_coor
             )
-            if res and len(res):
+            if res and len(res) > 0:
                 return res
-        return None
+        return None # will not occur
     
     def __seeker_choose_cell_on_path_for_announcement(self):
         """
-            return coordinate of a cell on path for announcement
+            return coordinate of a cell to go next on path for announcement
+
+            return None if we should NOT go on this path
         """
         cur_r,cur_c = self.problem.seeker.coordinate
         while len(self.seeker_path_for_announcement):
@@ -268,7 +273,8 @@ class Level2:
                 R,C = self.seeker_path_for_announcement[0]
             return R,C
         return None
-    def __seeker_check_unseen_cell_around_announcement(self):
+    
+    def __seeker_get_path_to_unseen_cell_of_announcement(self):
         """
             returns new path to other cell in the region of the announcement that we have not seen;
             or None if there is no cell
@@ -277,6 +283,7 @@ class Level2:
         cur_r, cur_c = seeker.coordinate
         ann_radius = self.problem.hiders[0].radius
         ann_coor = self.current_announcement['coordinate']
+        list_of_path = []
         for idrow in range(ann_coor[0] - ann_radius, ann_coor[0] + ann_radius + 1, +1):
             # check index validity
             if idrow < 0:
@@ -289,8 +296,6 @@ class Level2:
                     break
                 if idcol >= len(seeker.vision_map):
                     break
-                # if idrow == cur_r and idcol == cur_c:
-                #     continue
                 if self.seen_map[idrow][idcol] == False and self.reachable[idrow][idcol] != False:
                     # cell in the region of the announcement but we have not seen it yet
                     path = astar.astar(
@@ -301,8 +306,17 @@ class Level2:
                     if path == None:
                         self.reachable[idrow][idcol] = False
                     else:
-                        return path
-        return None
+                        list_of_path.append( path )
+        
+        if list_of_path == []:
+            # no path was found
+            return None
+        # choose the nearest cell
+        min_distance_path = list_of_path[0]
+        for path in list_of_path[1:]:
+            if len(path) < len(min_distance_path):
+                min_distance_path = path
+        return min_distance_path
     
     def __hider_take_turn(self, hider: Hider):
         """
@@ -463,12 +477,7 @@ class Level2:
                         # skip wall
                         continue
                     if self.seen_map[row][col] == False:
-                        cells.append(
-                            {
-                                'coordinate': (row, col),
-                                'distance': abs(row - cur_r) + abs(col - cur_c) # manhattan distance
-                            }
-                        )
+                        cells.append( (row, col) )
 
             if cur_r + radius < len(seeker.origin_map):
                 if not continue_flag:
@@ -483,12 +492,7 @@ class Level2:
                         # skip wall
                         continue
                     if self.seen_map[row][col] == False:
-                        cells.append(
-                            {
-                                'coordinate': (row, col),
-                                'distance': abs(row - cur_r) + abs(col - cur_c) # manhattan distance
-                            }
-                        )
+                        cells.append( (row, col) )
 
             if cur_c - radius >= 0:
                 if not continue_flag:
@@ -503,12 +507,7 @@ class Level2:
                         # skip wall
                         continue
                     if self.seen_map[row][col] == False:
-                        cells.append(
-                            {
-                                'coordinate': (row, col),
-                                'distance': abs(row - cur_r) + abs(col - cur_c) # manhattan distance
-                            }
-                        )
+                        cells.append( (row, col) )
 
             if cur_c + radius < len(seeker.origin_map[0]):
                 if not continue_flag:
@@ -523,12 +522,7 @@ class Level2:
                         # skip wall
                         continue
                     if self.seen_map[row][col] == False:
-                        cells.append(
-                            {
-                                'coordinate': (row, col),
-                                'distance': abs(row - cur_r) + abs(col - cur_c) # manhattan distance
-                            }
-                        )
+                        cells.append( (row, col) )
             
             # print('\tnormal path list')
             if len(cells) == 1:
@@ -540,35 +534,26 @@ class Level2:
                 path = astar.astar(
                     grid=self.astar_map,
                     start_coor=(cur_r, cur_c),
-                    goal_coor=cells[0].get('coordinate')
+                    goal_coor=cells[0]
                 )
-                if path:
-                    # reachable
-                    # print('\t',path)
-                    return path
-                # print('no path')
-                
+                if path == None:
+                    self.reachable[cells[0][0]][cells[0][1]] = False
+                return path
             elif len(cells) > 1:
                 # there are many cells to choose => choose cell with min distance
-                min_distance = [ cells[0] ]     # list of cells that has minimum manhattan distance
-                for el in cells[1:]:
-                    if el['distance'] < min_distance[0]['distance']:
-                        min_distance = [ el ]
-                    elif el['distance'] == min_distance[0]['distance']:
-                        min_distance.append( el )
-                
-                # check these min distance cells
-                for min in min_distance:
-                    # print('\tFrom', (cur_r,cur_c), 'to', min.get('coordinate'))
+                min_path = None
+                for coor in cells:
                     path = astar.astar(
                         grid=self.astar_map,
-                        start_coor=(cur_r,cur_c),
-                        goal_coor=min.get('coordinate')
+                        start_coor=(cur_r, cur_c),
+                        goal_coor=coor
                     )
-                    if path:
-                        # print('\t',path)
-                        return path
-                    # print('no path')
+                    if path == None:
+                        self.reachable[ coor[0] ][ coor[1] ] = False
+                        continue
+                    if min_path == None or len(path) < len(min_path):
+                        min_path = path
+                return min_path
             radius += 1
         return None
 
@@ -602,6 +587,51 @@ class Level2:
                     max_distance_coor = (i,j)
             return [ max_distance_coor ]
 
+    def __seeker_shortest_path_to_announcement(self, announcement):
+        """
+            return the shortest path to the nearest cell in region of announcement
+
+            return None if there is no path
+        """
+        seeker = self.problem.seeker
+        cur_r, cur_c = seeker.coordinate
+        ann_radius = self.problem.hiders[0].radius
+        ann_coor = announcement['coordinate']
+        list_of_path = []
+        for idrow in range(ann_coor[0] - ann_radius, ann_coor[0] + ann_radius + 1, +1):
+            # check index validity
+            if idrow < 0:
+                break
+            if idrow >= len(seeker.vision_map):
+                break
+            for idcol in range(ann_coor[1] - ann_radius, ann_coor[1] + ann_radius + 1, +1):
+                # check index validity
+                if idcol < 0:
+                    break
+                if idcol >= len(seeker.vision_map):
+                    break
+                if self.seen_map[idrow][idcol] == False and self.reachable[idrow][idcol] != False:
+                    # cell in the region of the announcement but we have not seen it yet
+                    path = astar.astar(
+                        grid=self.astar_map,
+                        start_coor=(cur_r, cur_c),
+                        goal_coor=(idrow, idcol)
+                    )
+                    if path == None:
+                        self.reachable[idrow][idcol] = False
+                    else:
+                        list_of_path.append( path )
+        
+        if list_of_path == []:
+            # no path was found
+            return None
+        # choose the nearest cell
+        min_distance_path = list_of_path[0]
+        for path in list_of_path[1:]:
+            if len(path) < len(min_distance_path):
+                min_distance_path = path
+        return min_distance_path
+
     def run(self):
         from copy import deepcopy
         all_states = []
@@ -632,6 +662,7 @@ class Level2:
                                                 # use when we take a blind step, we need to avoid steping back to the previous step
         while True:
             if not seeker_turn: # it is hiders' turn
+                seeker_turn = not seeker_turn
                 # traverse all hiders in the map
                 for hider in self.problem.hiders:
                     # skip if hider has been caught
@@ -646,20 +677,23 @@ class Level2:
                             score=seeker.score
                         )
                     )
-                seeker_turn = not seeker_turn
             # ----------------------------------------------------------------------
             # ---------------------------SEEKER'S TURN------------------------------
-            else:   # seeker turn
+            else:
                 seeker_turn = not seeker_turn
-                cur_r, cur_c = seeker.coordinate    # current position of the seeker
+
+                # current position of the seeker
+                cur_r, cur_c = seeker.coordinate 
                 self.reachable[cur_r][cur_c] = True
+
                 # check if seeker is in the same tile with a hider
                 self.__seeker_check_found_hider()
+
                 # ----------------------------------------
                 # ----------------------------------------
                 # check if all hiders are found
                 if self.total_hiders == 0:
-                    # end game, success
+                    # end game, SUCCESS
                     all_states.append(
                         StateForFE(
                             hiders=self.problem.hiders,
@@ -671,7 +705,9 @@ class Level2:
                     )
                     return all_states
                 
-                # check if we reach all the cells
+                # ----------------------------------------
+                # ----------------------------------------
+                # check if we have reached all the cells
                 flag_reach_all = True
                 for row in self.reachable:
                     for cell in row:
@@ -680,10 +716,8 @@ class Level2:
                             break
                     if not flag_reach_all:
                         break
-                if flag_reach_all and not len(self.seeker_path_to_hider):
-                    # reach all
-                    # => end game, failed
-                    print('reached all give up')
+                if flag_reach_all and self.visibile_hider_coor == []:
+                    # reached all => end game, FAILED
                     all_states.append(
                         StateForFE(
                             hiders=self.problem.hiders,
@@ -699,18 +733,15 @@ class Level2:
                 # ----------------------------------------
                 # check appearance of new hiders and announcements around seeker
                 self.__seeker_check_new_hider_and_announcement()
+
                 # ----------------------------------------
                 # ----------------------------------------
                 # check whether we are on the way to a hider
-                if len(self.seeker_path_to_hider):
-                    # print('\tchoose cell to hider')
+                if len(self.seeker_path_to_hider) > 0:
                     R,C = self.__seeker_choose_cell_on_path_to_hider()
                     self.seeker_path_to_hider.pop(0)
-                    # if len(self.seeker_path_to_hider) == 0:
-                    #     self.visibile_hider_coor.pop()
                     self.move_seeker_to( coordinate=(R,C) )
                     seeker.score -= 1
-                    # yield
                     all_states.append(
                         StateForFE(
                             hiders=self.problem.hiders,
@@ -722,13 +753,13 @@ class Level2:
                     )
                     self.seeker_normal_path = []
                     continue
+
                 # ----------------------------------------
                 # ----------------------------------------
-                # check whether we have seen hiders
+                # check whether we have any visible hiders
                 if len(self.visibile_hider_coor):
-                    # print('\tcreate path to hider')
                     res = self.__seeker_create_new_path_to_hider()
-                    if res:
+                    if res != None:
                         self.seeker_path_to_hider = res
                         R,C = self.seeker_path_to_hider.pop(0)
                         self.move_seeker_to( coordinate=(R,C) )
@@ -744,21 +775,24 @@ class Level2:
                         )
                         self.seeker_normal_path = []
                         continue
+
                 # ----------------------------------------
                 # ----------------------------------------
                 # check whether we are on the path to an announcement
-                if len(self.seeker_path_for_announcement) and self.current_announcement:
-                    # print('\tchoose cell to announcement')
-                    x,y = self.seeker_path_for_announcement[-1]
-                    moved = False
-                    if self.seen_map[x][y] == False:
-                        # the target cell is unseen
-                        res = self.__seeker_choose_cell_on_path_for_announcement()
-                        if res == None:
+                if len(self.seeker_path_for_announcement) > 0 and self.current_announcement:
+                    goal_x, goal_y = self.seeker_path_for_announcement[-1]
+                    moved = False # mark if we have moved 
+
+                    if self.seen_map[goal_x][goal_x] == True: # goal is seen
+                        # skip this path
+                        self.seeker_path_for_announcement = []
+                    else:
+                        # keep going on this path
+                        chosen_cell = self.__seeker_choose_cell_on_path_for_announcement()
+                        if chosen_cell == None:
                             self.seeker_path_for_announcement = []
                         else:
-                            self.seeker_path_for_announcement.pop(0)
-                            R,C = res
+                            R,C = self.seeker_path_for_announcement.pop(0)
                             self.move_seeker_to( coordinate=(R,C) )
                             seeker.score -= 1
                             # yield
@@ -772,46 +806,54 @@ class Level2:
                                 )
                             )
                             self.seeker_normal_path = []
-                            moved = not moved # TRUE
-                    else:
-                        self.seeker_path_for_announcement = []
+                            moved = not moved # mark as moved
+                    
+                    # check other cells of this announcement
                     if len(self.seeker_path_for_announcement) == 0:
-                        res = self.__seeker_check_unseen_cell_around_announcement()
-                        if res:
-                            self.seeker_path_for_announcement = res
-                        self.current_announcement = None
+                        path = self.__seeker_get_path_to_unseen_cell_of_announcement()
+                        if path == None:
+                            # no more cell
+                            self.current_announcement = None
+                        else:
+                            self.seeker_path_for_announcement = path
+                    
                     if moved:
                         continue
-                    else:
-                        if len(self.seeker_path_for_announcement):
-                            R,C = self.seeker_path_for_announcement.pop(0)
-                            self.move_seeker_to( coordinate=(R,C) )
-                            seeker.score -= 1
-                            all_states.append(
-                                StateForFE(
-                                    hiders=self.problem.hiders,
-                                    seeker=seeker,
-                                    announcements=self.announcements_on_map,
-                                    is_end=False,
-                                    score=seeker.score
-                                )
+                    elif len(self.seeker_path_for_announcement) > 0:
+                        R,C = self.seeker_path_for_announcement.pop(0)
+                        self.move_seeker_to( coordinate=(R,C) )
+                        seeker.score -= 1
+                        all_states.append(
+                            StateForFE(
+                                hiders=self.problem.hiders,
+                                seeker=seeker,
+                                announcements=self.announcements_on_map,
+                                is_end=False,
+                                score=seeker.score
                             )
-                            self.seeker_normal_path = []
-                            continue
+                        )
+                        self.seeker_normal_path = []
+                        continue
+
                 # ----------------------------------------
                 # ----------------------------------------
                 # there are other visible announcements
-                if len(self.visible_announcements):
-                    # print('\tcreate path for announcement')
-                    while len(self.visible_announcements):
-                        self.current_announcement = self.visible_announcements.pop()
-                        goal = self.__seeker_find_goal_for_path_announcement()
-                        if goal:
-                            if goal == (cur_r, cur_c):
-                                goal = None
-                            else:
-                                break
-                    if goal:
+                if len(self.visible_announcements) > 0:
+                    shortest_path = None
+                    nearest_ann = None
+                    for ann in self.visible_announcements:
+                        path = self.__seeker_shortest_path_to_announcement(ann)
+                        if path == None:
+                            self.visible_announcements.remove( ann )
+                            continue
+                        if shortest_path == None or len(path) < len(shortest_path):
+                            shortest_path = path
+                            nearest_ann = ann
+                    if shortest_path != None:
+                        self.current_announcement = nearest_ann
+                        self.visible_announcements.remove(nearest_ann)
+
+                        self.seeker_path_for_announcement = shortest_path
                         R,C = self.seeker_path_for_announcement.pop(0)
                         self.move_seeker_to( coordinate=(R,C) )
                         seeker.score -= 1
@@ -830,10 +872,9 @@ class Level2:
                 # ----------------------------------------
                 # blind step
                 if len(self.seeker_normal_path) == 0:
-                    # print('\tcreate normal path')
                     self.seeker_normal_path = self.__seeker_blind_step()
                     if self.seeker_normal_path == None:
-                        print('no normal path give up')
+                        # FAILED
                         all_states.append(
                             StateForFE(
                                 hiders=self.problem.hiders,
@@ -857,8 +898,9 @@ class Level2:
                         score=seeker.score
                     )
                 )
+
 def main():
-    lv2 = Level2('test/map1_7.txt')
+    lv2 = Level2('test/map1_1.txt')
 
     states = lv2.run()
 
