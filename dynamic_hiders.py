@@ -16,9 +16,9 @@ class Level3:
         self.path_save = [tuple]
         self.seeker_visited_cells = set()
         self.announcement = []
-        self.path_to_cell = None | list
+        self.path_to_cell = None
         self.score = 0
-
+        self.is_concede = False
         skeleton_map = []
         for row in self.problem.map_list:
             tmp_row = []
@@ -40,8 +40,11 @@ class Level3:
                 else:
                     tmp_row.append(True)
             self.grid_for_astar.append(tmp_row)
+        self.seeker_visited_cells.add(self.problem.seeker.coordinate)
 
-
+    @staticmethod
+    def manhattan_distance(cell_1: tuple, cell_2:tuple) -> int:
+        return abs(cell_1[0] - cell_2[0]) + abs(cell_1[1] - cell_2[1])
     def is_valid_cell(self, row, col) -> bool:
         if row < 0 or row >= self.problem.num_row:
             return False
@@ -57,7 +60,7 @@ class Level3:
                         new_cells += 1
         return new_cells
 
-    def seeker_finds_hider(self)->None|tuple:
+    def seeker_finds_hider(self) -> None | tuple:
         seeker = self.problem.seeker
         for i in range(max(0, seeker.coordinate[0] - 3), min(seeker.coordinate[0] + 3 + 1, self.problem.num_row)):
             for j in range(max(0, seeker.coordinate[1] - 3), min(seeker.coordinate[1] + 3 + 1, self.problem.num_col)):
@@ -122,12 +125,12 @@ class Level3:
         seeker = self.problem.seeker
         seeker.vision()
         seeker_row, seeker_col = seeker.coordinate
+        is_go_back = False
         for i in range(self.problem.num_row):
             for j in range(self.problem.num_col):
                 if type(seeker.vision_map[i][j]) == bool and seeker.vision_map[i][j] == True:
                     if seeker.skeleton_map[i][j] != -1 and (i, j) not in self.seeker_seen_cells:
                         self.seeker_seen_cells.add((i, j))
-        self.seeker_visited_cells.add(seeker.coordinate)
 
         if self.seeker_finds_hider() is not None:
             new_row, new_col = None, None
@@ -157,15 +160,48 @@ class Level3:
         elif self.seeker_finds_announcements() is not None:
             announcement = self.seeker_finds_announcements()
             for i in range(max(0, announcement[0] - 3), min(announcement[0] + 3 + 1, self.problem.num_row)):
-                for j in range(max(0, announcement[1] - 3),min(announcement[1] + 3 + 1, self.problem.num_col)):
+                for j in range(max(0, announcement[1] - 3), min(announcement[1] + 3 + 1, self.problem.num_col)):
                     if (i, j) not in self.seeker_seen_cells:
                         path = astar(goal_coor=(i, j),grid=self.grid_for_astar, start_coor=seeker.coordinate)
                         if path is not None:
                             # TODO: Continue from here, implement going with path
                             self.path_to_cell = path
                             pass
-        cells_chosen = self.seeker_choose_cells()
-        pass
+        else:
+            cells_chosen = self.seeker_choose_cells()
+            mx_new_seen, count_mx = -1, 0
+            for cell in cells_chosen:
+                if mx_new_seen < cell[1]:
+                    mx_new_seen = cell[1]
+                    count_mx = 1
+                elif mx_new_seen == cell[1]:
+                    count_mx += 1
+
+            if mx_new_seen != 0:
+                new_cell = None
+                for _cell in cells_chosen:
+                    if _cell[1] == mx_new_seen:
+                        new_cell = _cell
+                        break
+                self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
+                seeker.coordinate = new_cell
+                seeker.vision()
+                self.problem.map_list[new_cell[0]][new_cell[1]].append(seeker)
+            elif mx_new_seen == 0:
+                if len(self.path_save) == 0:
+                    self.is_concede = True
+                    return
+                else:
+                    is_go_back = True
+                    new_cell = self.path_save[-1]
+                    self.path_save.pop()
+                    self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
+                    seeker.coordinate = new_cell
+                    seeker.vision()
+                    self.problem.map_list[new_cell[0]][new_cell[1]].append(seeker)
+        self.seeker_visited_cells.add(seeker.coordinate)
+        if not is_go_back:
+            self.path_save.append(seeker.coordinate)
 
     def hider_see_moves(self, hider: Hider):
         seeker_location = None
@@ -228,6 +264,9 @@ class Level3:
                 self.hiders_announce()
             self.seeker_moves()
             self.hiders_move()
+            if self.is_concede:
+                print("Seeker concede")
+
 
 
 
