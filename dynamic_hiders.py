@@ -169,7 +169,7 @@ class Level3:
                 for j in range(max(0, announcement[1] - 3), min(announcement[1] + 3 + 1, self.problem.num_col)):
                     if (i, j) not in self.seeker_seen_cells:
                         path = astar(goal_coor=(i, j),grid=self.grid_for_astar, start_coor=seeker.coordinate)
-                        if path is not None:
+                        if path is not None and len(path) != 0:
                             self.path_to_cell = path
                             new_cell = self.path_to_cell.pop(0)
                             self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
@@ -183,7 +183,7 @@ class Level3:
                 for i in range(max(0, announcement[0] - 3), min(announcement[0] + 3 + 1, self.problem.num_row)):
                     for j in range(max(0, announcement[1] - 3), min(announcement[1] + 3 + 1, self.problem.num_col)):
                         path = astar(goal_coor=(i, j), grid=self.grid_for_astar, start_coor=seeker.coordinate)
-                        if path is not None:
+                        if path is not None and len(path) != 0:
                             self.path_to_cell = path
                             new_cell = self.path_to_cell.pop(0)
                             self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
