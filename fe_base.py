@@ -5,6 +5,7 @@ import dynamic_hiders
 import fe_menu
 import problem
 import player
+import state_for_fe
 from dynamic_hiders import *
 
 # -------------------ELEMENTS-------------------
@@ -20,10 +21,11 @@ SCREEN_HEIGHT: int
 # -----------------------GAME-------------------
 game = None
 
-class TimerClass:
-    start_time = float
-    life_time = float
 
+class TimerClass:
+    def __init__(self):
+        self.start_time = float
+        self.life_time = float
     def start_timer(self, life_time) -> None:
         self.start_time = rl.get_time()
         self.life_time = life_time
@@ -35,7 +37,7 @@ class TimerClass:
         return rl.get_time() - self.start_time
 
 
-timer = TimerClass
+timer = TimerClass()
 class Map:
     def __init__(self):
         self.tiles_row = 0  # Number of tiles in row
@@ -183,18 +185,21 @@ def main():
     fogOfWar = rl.load_render_texture(map.tiles_col, map.tiles_row)
     rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR)
     rl.set_target_fps(30)
+    timer.start_timer(life_time=1)
     while not rl.window_should_close():
         # --------USER CONTROL MOVEMENT (ONLY FOR DEBUGGING) --------
         user_control = False
         if user_control:
             handle_input(map, seeker)
-        # --------FILE INPUT MOVEMENT--------
-
+        # --------AUTO INPUT MOVEMENT--------
+        if len(game) and timer.is_timer_done():
+            state: state_for_fe.StateForFE = game.pop(0)
+            seeker.set_location(row=state.seeker.coordinate[0], col=state.seeker.coordinate[1], my_map=map)
+            timer.start_timer(life_time=1)
         # Previous visited tiles are set to partial fog
         for i in range(map.tiles_row * map.tiles_col):
             if map.tileFog[i] == 1:
-                map.tileFog[i] = 2 
-
+                map.tileFog[i] = 2
         # Check visibility and update fog
         # NOTE: It is important to check tilemap limits to avoid processing tiles out-of-array-bounds (it could crash program)
         for row in range(max(0, seeker.tile_row - PLAYER_TILE_VISIBILITY), min(map.tiles_row, seeker.tile_row + PLAYER_TILE_VISIBILITY + 1)):
@@ -258,7 +263,8 @@ if __name__ == "__main__":
         pass
     elif val == 3:
         prob = problem.Problem(input_filename='test/map1_1.txt', allow_move_obstacles=False)
-        game = dynamic_hiders.Level3.run()
+        lv3 = dynamic_hiders.Level3(file_path='test/map1_1.txt')
+        game = lv3.run()
     elif val == 4:
         pass
     MAP_NUM_COL = prob.num_col
