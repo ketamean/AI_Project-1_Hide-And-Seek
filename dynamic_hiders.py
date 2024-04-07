@@ -14,9 +14,10 @@ class Level3:
         self.problem.seeker.origin_map = self.problem.map_list
         self.seeker_seen_cells = set()
         self.path_save = [tuple]
-        self.seeker_visited_cells = [tuple]
+        self.seeker_visited_cells = set()
         self.announcement = []
         self.path_to_cell = None | list
+        self.score = 0
 
         skeleton_map = []
         for row in self.problem.map_list:
@@ -74,6 +75,7 @@ class Level3:
         return None
 
     # choose next cell to move in normal situation (without announcement)
+
     def seeker_choose_cells(self)->tuple|list:
         seeker = self.problem.seeker
         seeker_row, seeker_col = seeker.coordinate
@@ -105,16 +107,27 @@ class Level3:
                 nearby_cells.append((new_seeker.coordinate, new_cells))
         return nearby_cells
 
+    def seeker_catch(self):
+        seeker = self.problem.seeker
+        catch_list = []
+        for hider in self.problem.hiders:
+            if hider.coordinate == seeker.coordinate:
+                catch_list.append(hider)
+        for hider in catch_list:
+            self.problem.hiders.remove(hider)
+            self.score += 20
 
     def seeker_moves(self):
+        self.seeker_catch()
         seeker = self.problem.seeker
         seeker.vision()
         seeker_row, seeker_col = seeker.coordinate
         for i in range(self.problem.num_row):
             for j in range(self.problem.num_col):
                 if type(seeker.vision_map[i][j]) == bool and seeker.vision_map[i][j] == True:
-                    if seeker.skeleton_map[i][j] != -1:
+                    if seeker.skeleton_map[i][j] != -1 and (i, j) not in self.seeker_seen_cells:
                         self.seeker_seen_cells.add((i, j))
+        self.seeker_visited_cells.add(seeker.coordinate)
 
         if self.seeker_finds_hider() is not None:
             new_row, new_col = None, None
@@ -124,15 +137,23 @@ class Level3:
                 for col_delta in range(-1, 2):
                     temp_row = seeker_row + row_delta
                     temp_col = seeker_col + col_delta
-                    if self.is_valid_cell(temp_row, temp_col) and seeker.skeleton_map[temp_row][temp_col] == -1:
+                    if self.is_valid_cell(temp_row, temp_col) and seeker.skeleton_map[temp_row][temp_col] != -1:
                         if abs(temp_row - hider_loc[0]) + abs(temp_col - hider_loc[1]) < min_manhattan_dis:
                             min_manhattan_dis = abs(temp_row - hider_loc[0]) + abs(temp_col - hider_loc[1])
                             new_row = temp_row
                             new_col = temp_col
-            # move to new_row and new_col, nếu có hider ở ô này thì đánh dấu đã bắt.
+            self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
+            seeker.coordinate = (new_row, new_col)
+            seeker.vision()
+            self.problem.map_list[new_row][new_col].append(seeker)
+
         # Nếu đang tìm hiểu xung quanh 1 announcement thì tìm tiếp, không thì tìm thông tin từ 1 announcement mới.
         elif self.path_to_cell is not None:
-            pass
+            new_cell = self.path_to_cell.pop(0)
+            self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
+            seeker.coordinate = new_cell
+            seeker.vision()
+            self.problem.map_list[new_cell[0]][new_cell[1]].append(seeker)
         elif self.seeker_finds_announcements() is not None:
             announcement = self.seeker_finds_announcements()
             for i in range(max(0, announcement[0] - 3), min(announcement[0] + 3 + 1, self.problem.num_row)):
@@ -141,6 +162,7 @@ class Level3:
                         path = astar(goal_coor=(i, j),grid=self.grid_for_astar, start_coor=seeker.coordinate)
                         if path is not None:
                             # TODO: Continue from here, implement going with path
+                            self.path_to_cell = path
                             pass
         cells_chosen = self.seeker_choose_cells()
         pass
@@ -182,7 +204,6 @@ class Level3:
         for hider in hiders:
             hider.vision()
             self.hider_see_moves(hider)
-            print(hider.coordinate)
         pass
 
     def hider_random_announcement(self, hider) -> tuple:
