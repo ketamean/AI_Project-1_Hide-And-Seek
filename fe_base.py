@@ -7,6 +7,7 @@ import problem
 import player
 import state_for_fe
 from dynamic_hiders import *
+import static_hiders
 
 # -------------------ELEMENTS-------------------
 MAP_TILE_SIZE = 20
@@ -259,7 +260,10 @@ if __name__ == "__main__":
     # Menu
     val = fe_menu.main_menu()
     if val == 1:
-        prob = problem.Problem(input_filename='test/map1_1.txt', allow_move_obstacles=False)
+        FILENAME = 'test/map1_4.txt'
+        lv1 = static_hiders.Level2(input_filepath=FILENAME)
+        prob = problem.Problem(input_filename=FILENAME, allow_move_obstacles=False)
+        game = lv1.run()
     elif val == 2:
         import static_hiders
         FILENAME = 'test/map1_4.txt'
