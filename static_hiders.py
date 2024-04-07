@@ -78,6 +78,8 @@ class Level2:
         
         # remove seeker from the previous cell
         self.problem.map_list[r][c].remove(seeker)
+        if len(self.problem.map_list[r][c]) == 0:
+            self.problem.map_list[r][c] = [1000]
 
         self.reachable[next_r][next_c] = True
 
@@ -104,6 +106,8 @@ class Level2:
                     self.visibile_hider_coor.remove( (cur_r, cur_c) )
                 self.problem.hiders.remove(element)
                 self.problem.map_list[cur_r][cur_c].remove(element)
+                if len(self.problem.map_list[cur_r][cur_c]) == 0:
+                    self.problem.map_list[cur_r][cur_c] = [1000]
                 # remove all of its announcements in the list of visible announcements
                 for ann in self.visible_announcements:
                     if ann['hider_id'] == element.id:
@@ -881,4 +885,5 @@ def main():
     #             print()
     #         break
 
-main()
+if __name__ == '__main__':
+    main()
