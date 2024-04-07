@@ -1,3 +1,4 @@
+import math
 from problem import *
 from obstacle import *
 from player import *
@@ -60,6 +61,7 @@ class Level1:
 
             # Initialize a dictionary to store parent nodes for path reconstruction
             came_from = {}
+        
 
             while not open_list.empty():
                 _, current = open_list.get()
@@ -91,11 +93,9 @@ class Level1:
                         g_score[neighbor] = tentative_g_score
                         f_score[neighbor] = tentative_g_score + manhattan_distance(neighbor, target_coor)
                         open_list.put((f_score[neighbor], neighbor))
-
             # If the open list is empty and the goal is not reached, return an empty path
             return []
     
-
     def __choose_step_no_info(self):
         """
             let seeker take a step when there is no percept of Hider and Announcement
@@ -261,31 +261,6 @@ class Level1:
             else:
                 self.problem.map_list[row][col].append(announce)
 
-    # def __seeker_check_found_hider(self):
-    #     """
-    #         check if the seeker is currently in the same tile with a particular hider
-    #     """
-    #     seeker = self.problem.seeker
-    #     cur_r, cur_c = seeker.coordinate
-    #     for element in self.problem.map_list[cur_r][cur_c]:
-    #         if not isinstance(element, int) and element.signature == 'Hider':
-    #             # a hider is found
-    #             self.total_hiders -= 1
-    #             seeker.score += 20
-    #             print('found', (cur_r, cur_c))
-    #             self.hider_coor.remove( (cur_r, cur_c) )
-    #             self.problem.hiders.remove(element)
-    #             self.problem.map_list[cur_r][cur_c].remove(element)
-    #             # remove all of its announcements in the list of visible announcements
-    #             for ann in self.announcement_coor:
-    #                 if ann['hider_id'] == element.id:
-    #                     self.announcement_coor.remove( ann )
-    #             if self.current_announcement and self.current_announcement['hider_id'] == element.id:
-    #                 self.current_announcement = None
-    #                 self.seeker_path_for_announcement = []
-                
-    #             break
-
     def __seeker_check_found_hider(self):
         """
         Check if the seeker is currently in the same tile with a particular hider.
@@ -381,7 +356,7 @@ class Level1:
         else:
             # only 1 hider
             hider_coor = self.hider_coor[0]
-            print('hider', hider_coor)
+            # print('hider', hider_coor)
             res = self.__move_towards_target(hider_coor)
             if res:
                 for i, j in res:
@@ -415,22 +390,44 @@ class Level1:
                         self.problem.map_list[i][j] = [seeker]
                     else:
                         self.problem.map_list[i][j].append(seeker)
+                    
+                    hiderr, hiderc = hider_coor
+
+
+                    if hiderr == i and hiderc == j:
+                        self.current_state_end = True
+                        self.all_state.append(StateForFE(
+                            seeker= seeker,
+                            hiders= self.problem.hiders,
+                            announcements=self.announcements_on_map,
+                            score= seeker.score,
+                            is_end=self.current_state_end
+                        ))
+
+
+                    self.all_state.append(StateForFE(
+                        seeker= seeker,
+                        hiders= self.problem.hiders,
+                        announcements=self.announcements_on_map,
+                        score= seeker.score,
+                        is_end=self.current_state_end
+                    ))
                     self.moves_stack.append((i, j))
 
-                    print('MOVE TOWARDS HIDER')
-                    for row in self.problem.map_list:
-                        for cell in row:
-                            if -1 in cell:
-                                print('x', end=' ')
-                            # if there is a seeker in that cell
-                            elif seeker in cell:
-                                print('S', end=' ')
-                            # if there is a hider in that cell
-                            elif len(cell) == 1 and isinstance(cell[0], Hider):
-                                print('H', end=' ')
-                            else:
-                                print('-', end=' ')
-                        print()
+                    # print('MOVE TOWARDS HIDER')
+                    # for row in self.problem.map_list:
+                    #     for cell in row:
+                    #         if -1 in cell:
+                    #             print('x', end=' ')
+                    #         # if there is a seeker in that cell
+                    #         elif seeker in cell:
+                    #             print('S', end=' ')
+                    #         # if there is a hider in that cell
+                    #         elif len(cell) == 1 and isinstance(cell[0], Hider):
+                    #             print('H', end=' ')
+                    #         else:
+                    #             print('-', end=' ')
+                    #     print()
     def __seeker_go_to_announcement(self, seeker : Seeker, seeker_index: tuple):
         """
         there is announcement in seeker vision, goes to that announcement
@@ -438,9 +435,8 @@ class Level1:
         """
         from copy import deepcopy
         r, c = seeker_index
-        total_row = len(self.problem.map_list)
         
-        cur_announcement = self.announcement_coor[-1]
+        cur_announcement = self.announcement_coor.pop(0)
         print('actual announcement', cur_announcement)
 
         res = self.__move_towards_target(cur_announcement)
@@ -485,6 +481,13 @@ class Level1:
                 else:
                     self.problem.map_list[i][j].append(seeker)
 
+                self.all_state.append(StateForFE(
+                            seeker= seeker,
+                            hiders= self.problem.hiders,
+                            announcements=self.announcements_on_map,
+                            score= seeker.score,
+                            is_end=self.current_state_end
+                        ))
                 self.moves_stack.append((i, j))
                 
                 #========================================
@@ -502,12 +505,8 @@ class Level1:
                         else:
                             print('-', end=' ')  # Empty cell
                     print()
-                #=================================
 
-                # tmp_vision = []
-                # if self.vision_maps[i + j*total_row] != None:
-                #     tmp_vision = deepcopy(self.vision_maps[i + j*total_row])
-                # print(tmp_vision)
+
                 for row in range(i-seeker.radius, i+seeker.radius+1, +1):
                     if row < 0:
                         continue
@@ -525,7 +524,7 @@ class Level1:
                                         self.hider_coor.append((row, col))
                                         return
 
-    def run(self):
+    def run(self)->list:
         from copy import deepcopy, copy
         seeker = self.problem.seeker
         self.hider_coor = []
@@ -546,29 +545,23 @@ class Level1:
         self.current_announcement = None
         self.last_step = seeker.coordinate
         self.total_hiders = len(self.problem.hiders)
+        self.all_state = []
 
-        # # HANDLE NO HIDER CASE
-
-        # if len(self.problem.hiders) != 1:
-        #     raise ValueError('Hider not exist or out of range.')
-
-        current_state_end = False
+        self.current_state_end = False
         while True:
             if not seeker_turn:
                 # # hider raise announcement
                 hider = self.problem.hiders[0]
                 self.__hider_take_turn(hider)
 
-                yield StateForFE(
-                    player=seeker,
-                    old_row=self.moves_stack[-1][0],
-                    old_col=self.moves_stack[-1][1],
-                    new_row=R,
-                    new_col=C,
-                    announcements=self.announcements_on_map
-                )
+                self.all_state.append(StateForFE(
+                    seeker= seeker,
+                    hiders= self.problem.hiders,
+                    announcements=self.announcements_on_map,
+                    score= seeker.score,
+                    is_end=self.current_state_end
+                ))
                 seeker_turn = not seeker_turn
-
 
             # SEEKER MOVE
             else:
@@ -580,8 +573,15 @@ class Level1:
                 self.__seeker_check_found_hider()
                 if self.total_hiders == 0:
                     # done game
-                    return
-                    current_state_end = True
+                    self.current_state_end = True
+                    self.all_state.append(StateForFE(
+                        seeker= seeker,
+                        hiders= self.problem.hiders,
+                        announcements=self.announcements_on_map,
+                        score= seeker.score,
+                        is_end=self.current_state_end
+                    ))
+                    break
 
 
                 # CHECK IN CASE SEEKER CANNOT FIND OUT HIDER -> GIVE UP
@@ -593,18 +593,18 @@ class Level1:
                     if not flag_reach_all: break
                 if flag_reach_all:
                     # traverse through the whole map, return
-                    return
+                    break
                 
 
                 self.__check_there_hider_or_announcement(seeker)
                 
                 if len(self.hider_coor) or len(self.announcement_coor):
+                    seeker.score -= 1
                     if len(self.hider_coor):
                         self.__seeker_go_to_hider(seeker, (r,c))
                     elif len(self.announcement_coor):
                         # there is an announcement, find path to announcement
                         self.__seeker_go_to_announcement(seeker, (r,c))
-                        self.announcement_coor.pop()
 
                 else:
                     #  THERE IS NO HIDER OR ANNOUNCEMENT IN THE SEEKER RANGE, SO IT WILL TAKE A BLIND STEP
@@ -615,12 +615,6 @@ class Level1:
                         return [],False
                     
 
-                    # if res == None:
-                    # if abs(seeker.score) > ((len(self.problem.map_list) * len(self.problem.map_list[0]))/2):
-                    #     # give up
-                    #     print("No cell to go")
-                    #     return [],False
-                    #     current_state_end = True
                     for R, C in res:
                         self.problem.map_list[r][c].remove( seeker )
                         seeker.coordinate = (R,C)
@@ -658,19 +652,13 @@ class Level1:
                         # decrease seeker score for each move
                         seeker.score -= 1
 
-                        yield StateForFE(
-                            # seeker=self.problem.seeker,
-                            # hiders=self.problem.hiders,
-                            # announcements=self.announcements_on_map,
-                            # score=seeker.score,
-                            # is_end=current_state_end
-                            player=seeker,
-                            old_row=self.moves_stack[-1][0],
-                            old_col=self.moves_stack[-1][1],
-                            new_row=R,
-                            new_col=C,
-                            announcements=self.announcements_on_map
-                        )
+                        self.all_state.append(StateForFE(
+                            seeker= seeker,
+                            hiders= self.problem.hiders,
+                            announcements=self.announcements_on_map,
+                            score= seeker.score,
+                            is_end=self.current_state_end
+                        ))
                         self.moves_stack.append( (R,C) )  
 
                 for row in self.problem.map_list:
@@ -688,19 +676,7 @@ class Level1:
                         else:
                             print('-', end=' ')
                     print()
-
-            # for row in self.seen_map:
-            #     for cell in row:
-            #         if cell == -1:
-            #             print('x', end=' ')
-            #         elif cell == 1000:
-            #             print('-', end=' ')
-            #         elif cell:
-            #             print(1, end=' ')
-            #         else:
-            #             print(0, end=' ')
-            #     print()
-            # -----------------------------------------------------------------      
+        return self.all_state
              
 class Level2:
     """
@@ -1266,7 +1242,7 @@ class Level2:
                 # check if all hiders are found
                 if self.total_hiders == 0:
                     # end game, success
-                    return
+                    break
                 
                 # check if we reach all the cells
                 flag_reach_all = True
