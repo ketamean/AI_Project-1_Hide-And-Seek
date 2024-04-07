@@ -3,6 +3,7 @@ from obstacle import *
 from player import *
 from pq import *
 from astar import *
+from queue import PriorityQueue
 from state_for_fe import StateForFE
 class Level1:
     announcement = []
@@ -36,61 +37,134 @@ class Level1:
         (1,-1),     (1,0),      (1,1)
     ]
     
+    # def __move_towards_target(self, target_coor: tuple):
+    #     print(target_coor, 'target')
+    #     """
+    #     Move the seeker towards the target cell until it reaches the target.
+
+    #     Returns a list of steps (as coordinates) taken by the seeker.
+    #     """
+    #     last_move = []
+    #     last_move.append(self.moves_stack[-1])
+
+    #     tmp_seeker = Seeker(
+    #         coordinate=self.problem.seeker.coordinate
+    #     )
+    #     tmp_seeker.origin_map = self.problem.seeker.origin_map
+    #     tmp_seeker.skeleton_map = self.problem.seeker.skeleton_map
+    #     seeker_path = []
+
+    #     while tmp_seeker.coordinate != target_coor:
+    #         cur_r, cur_c = tmp_seeker.coordinate
+    #         target_r, target_c = target_coor
+
+    #         # Determine the direction to move towards the target cell
+    #         move_direction = (
+    #             1 if target_r > cur_r else -1 if target_r < cur_r else 0,
+    #             1 if target_c > cur_c else -1 if target_c < cur_c else 0
+    #         )
+
+    #         # Attempt to move in the chosen direction
+    #         next_r = cur_r + move_direction[0]
+    #         next_c = cur_c + move_direction[1]
+
+    #         print('list of last move', last_move)
+    #         # If the chosen direction is blocked or out of bounds, try alternative directions
+    #         if (next_r < 0 or next_r >= len(self.problem.map_list) or
+    #                 next_c < 0 or next_c >= len(self.problem.map_list[0]) or
+    #                 -1 in self.problem.map_list[next_r][next_c]):
+    #             alternative_found = False
+    #             for dr, dc in Level1.ADJACENT:
+    #                 next_r = cur_r + dr
+    #                 next_c = cur_c + dc
+    #                 # Check if the alternative direction is valid
+    #                 if (next_r >= 0 and next_r < len(self.problem.map_list) and
+    #                         next_c >= 0 and next_c < len(self.problem.map_list[0]) and
+    #                         -1 not in self.problem.map_list[next_r][next_c]): # and (next_r, next_c != last_move[-1]):
+    #                     # Move in the alternative direction
+    #                     seeker_path.append((next_r, next_c))
+    #                     last_move.append((cur_r, cur_c))
+                        
+    #                     print('alternative:', (next_r, next_c))
+    #                     tmp_seeker.coordinate = (next_r, next_c)
+    #                     alternative_found = True
+    #                     break  # Exit the loop after finding a valid direction
+                    
+    #             # If no alternative direction is found, return an empty path
+    #             if not alternative_found:
+    #                 return []
+
+    #         # elif ((next_r, next_c) not in last_move):
+    #         else:
+    #             # Move in the initially chosen direction
+    #             seeker_path.append((next_r, next_c))
+    #             last_move.append((cur_r, cur_c))
+    #             print('alternative1:', (next_r, next_c))
+    #             tmp_seeker.coordinate = (next_r, next_c)
+    #             alternative_found = True
+    #         # else:
+    #         #     continue
+
+    #     return seeker_path
+
     def __move_towards_target(self, target_coor: tuple):
-        """
-        Move the seeker towards the target cell until it reaches the target.
+            """
+            Move the seeker towards the target cell until it reaches the target.
 
-        Returns a list of steps (as coordinates) taken by the seeker.
-        """
-        tmp_seeker = Seeker(
-            coordinate= self.problem.seeker.coordinate
-        )
-        tmp_seeker.origin_map = self.problem.seeker.origin_map
-        tmp_seeker.skeleton_map = self.problem.seeker.skeleton_map
-        seeker_path = []
+            Returns a list of steps (as coordinates) taken by the seeker.
+            """
+            seeker = self.problem.seeker
+            seeker_coordinate = seeker.coordinate
 
-        while tmp_seeker.coordinate != target_coor:
-            cur_r, cur_c = tmp_seeker.coordinate
-            target_r, target_c = target_coor
+            # Define a helper function to compute the Manhattan distance heuristic
+            def manhattan_distance(coord1, coord2):
+                return abs(coord1[0] - coord2[0]) + abs(coord1[1] - coord2[1])
 
-            # Determine the direction to move towards the target cell
-            move_direction = (
-                1 if target_r > cur_r else -1 if target_r < cur_r else 0,
-                1 if target_c > cur_c else -1 if target_c < cur_c else 0
-            )
+            # Initialize dictionaries to keep track of g-score and f-score for each node
+            g_score = {seeker_coordinate: 0}
+            f_score = {seeker_coordinate: manhattan_distance(seeker_coordinate, target_coor)}
 
-            # Attempt to move in the chosen direction
-            next_r = cur_r + move_direction[0]
-            next_c = cur_c + move_direction[1]
+            # Initialize a priority queue to store nodes to be evaluated
+            open_list = PriorityQueue()
+            open_list.put((f_score[seeker_coordinate], seeker_coordinate))
 
-            # If the chosen direction is blocked, try alternative directions
-            if (next_r < 0 or next_r >= len(self.problem.map_list) or
-                next_c < 0 or next_c >= len(self.problem.map_list[0]) or
-                -1 in self.problem.map_list[next_r][next_c]):
-                # Check alternative directions
+            # Initialize a dictionary to store parent nodes for path reconstruction
+            came_from = {}
+
+            while not open_list.empty():
+                _, current = open_list.get()
+
+                if current == target_coor:
+                    # Reconstruct the path and return it
+                    path = []
+                    while current in came_from:
+                        path.append(current)
+                        current = came_from[current]
+                    path.reverse()
+                    return path
+
                 for dr, dc in Level1.ADJACENT:
-                    next_r = cur_r + dr
-                    next_c = cur_c + dc
-                    # Check if the alternative direction is valid
-                    # if (next_r, next_c == self.moves_stack[-1]):
-                    #     # Avoid moving back to the previous cell
-                    #     continue
-                    if (next_r >= 0 and next_r < len(self.problem.map_list) and
-                        next_c >= 0 and next_c < len(self.problem.map_list[0]) and
-                        -1 not in self.problem.map_list[next_r][next_c]):
-                        # Move in the alternative direction
-                        seeker_path.append((next_r, next_c))
-                        print('alternative:', (next_r, next_c))
-                        tmp_seeker.coordinate = (next_r, next_c)
-                        break  # Exit the loop after finding a valid direction
+                    neighbor = (current[0] + dr, current[1] + dc)
 
-            else:
-                # Move in the initially chosen direction
-                seeker_path.append((next_r, next_c))
-                tmp_seeker.coordinate = (next_r, next_c)
+                    # Check if the neighbor is valid
+                    if (neighbor[0] < 0 or neighbor[0] >= len(self.problem.map_list) or
+                        neighbor[1] < 0 or neighbor[1] >= len(self.problem.map_list[0]) or
+                        -1 in self.problem.map_list[neighbor[0]][neighbor[1]]):
+                        continue
 
-        return seeker_path
+                    # Compute the tentative g-score for the neighbor
+                    tentative_g_score = g_score[current] + 1
 
+                    # Update if this is a better path
+                    if (neighbor not in g_score) or (tentative_g_score < g_score[neighbor]):
+                        came_from[neighbor] = current
+                        g_score[neighbor] = tentative_g_score
+                        f_score[neighbor] = tentative_g_score + manhattan_distance(neighbor, target_coor)
+                        open_list.put((f_score[neighbor], neighbor))
+
+            # If the open list is empty and the goal is not reached, return an empty path
+            return []
+    
     def __choose_step_no_info(self):
         """
             let seeker take a step when there is no percept of Hider and Announcement
@@ -253,6 +327,31 @@ class Level1:
             else:
                 print('max coordinate:', (max_coordinate[0]))
                 return [(max_coordinate[0])]
+    
+    def __hider_take_turn(self, hider: Hider):
+        """
+        A hider in the list of hiders takes its turn:
+            - Increase count to announcement
+            - If needed, raise an announcement and put it onto the map
+
+        id: Index of hider in the list of hider in the problem, and it is also ID of the hider
+        Returns nothing
+        """
+        hider.count_to_announcement += 1
+        if hider.count_to_announcement == hider.step_to_announcement:
+            # Reset count to announcement
+            hider.count_to_announcement = 0
+
+            # Raise an announcement for the hider
+            announce = hider.announce()
+            self.announcements_on_map.append(announce)
+            row, col = announce.coordinate
+
+            # Place the new announcement on the map
+            if 1000 in self.problem.map_list[row][col]:
+                self.problem.map_list[row][col] = [announce]
+            else:
+                self.problem.map_list[row][col].append(announce)
 
     def run(self):
         from copy import deepcopy, copy
@@ -314,6 +413,7 @@ class Level1:
 
                 if hider_found or announcement_found:
                     break  # Exit the loop if either a Hider or Announcement is found
+
 
             if len(hider_coor) or len(announcement_coor):
                 if len(hider_coor):
@@ -434,6 +534,9 @@ class Level1:
                         print('append seeker', (R, C))
                     else:
                         self.problem.map_list[R][C].append( seeker )
+
+                    # decrease seeker score for each move
+                    seeker.score -= 1
 
                     yield StateForFE(
                         player=seeker,
