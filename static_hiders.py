@@ -448,7 +448,7 @@ class Level1:
                                         print()
                     if len(announcement_coor):
                         # there is an announcement, find path to announcement
-                        
+
                         # There is only an announcement in sight, move towards it
                         if len(announcement_coor) == 1:
                             announcement_coor = announcement_coor[0]
@@ -458,6 +458,7 @@ class Level1:
                         res = self.__move_towards_target(announcement_coor)
                         if res:
                             for i, j in res:
+                                print('seeker move to announcement', (i, j))
                                 # Update seeker's position
                                 self.problem.map_list[r][c].remove(seeker)
                                 r, c = i, j
@@ -491,20 +492,20 @@ class Level1:
                                     self.problem.map_list[i][j].append(seeker)
                                 self.moves_stack.append((i, j))
 
-                                    print('MOVE TOWARDS ANNOUNCEMENT')
-                                    for row in self.problem.map_list:
-                                        for cell in row:
-                                            if -1 in cell:
-                                                print('x', end=' ')  # Wall
-                                            elif seeker in cell:
-                                                print('S', end=' ')  # Seeker
-                                            elif any(isinstance(obj, Hider) for obj in cell):
-                                                print('H', end=' ')  # Hider
-                                            elif any(isinstance(obj, Announcement) for obj in cell):
-                                                print('A', end=' ')  # Announcement
-                                            else:
-                                                print('-', end=' ')  # Empty cell
-                                        print()
+                                print('MOVE TOWARDS ANNOUNCEMENT')
+                                for row in self.problem.map_list:
+                                    for cell in row:
+                                        if -1 in cell:
+                                            print('x', end=' ')  # Wall
+                                        elif seeker in cell:
+                                            print('S', end=' ')  # Seeker
+                                        elif any(isinstance(obj, Hider) for obj in cell):
+                                            print('H', end=' ')  # Hider
+                                        elif any(isinstance(obj, Announcement) for obj in cell):
+                                            print('A', end=' ')  # Announcement
+                                        else:
+                                            print('-', end=' ')  # Empty cell
+                                    print()
 
                 
                 else:
