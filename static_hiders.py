@@ -61,9 +61,11 @@ class Level1:
 
             # Initialize a dictionary to store parent nodes for path reconstruction
             came_from = {}
-        
+
+            stop_flag = 0
 
             while not open_list.empty():
+                stop_flag += 1
                 _, current = open_list.get()
 
                 if current == target_coor:
@@ -74,8 +76,10 @@ class Level1:
                         current = came_from[current]
                     path.reverse()
                     return path
-
+                
+                stop_flag1 = 0
                 for dr, dc in Level1.ADJACENT:
+                    stop_flag1 += 1
                     neighbor = (current[0] + dr, current[1] + dc)
 
                     # Check if the neighbor is valid
@@ -93,6 +97,11 @@ class Level1:
                         g_score[neighbor] = tentative_g_score
                         f_score[neighbor] = tentative_g_score + manhattan_distance(neighbor, target_coor)
                         open_list.put((f_score[neighbor], neighbor))
+                    if stop_flag1 > 150:
+                        break
+                
+                if stop_flag > 150:
+                    break
             # If the open list is empty and the goal is not reached, return an empty path
             return []
     
@@ -414,20 +423,7 @@ class Level1:
                     ))
                     self.moves_stack.append((i, j))
 
-                    # print('MOVE TOWARDS HIDER')
-                    # for row in self.problem.map_list:
-                    #     for cell in row:
-                    #         if -1 in cell:
-                    #             print('x', end=' ')
-                    #         # if there is a seeker in that cell
-                    #         elif seeker in cell:
-                    #             print('S', end=' ')
-                    #         # if there is a hider in that cell
-                    #         elif len(cell) == 1 and isinstance(cell[0], Hider):
-                    #             print('H', end=' ')
-                    #         else:
-                    #             print('-', end=' ')
-                    #     print()
+
     def __seeker_go_to_announcement(self, seeker : Seeker, seeker_index: tuple):
         """
         there is announcement in seeker vision, goes to that announcement
@@ -661,21 +657,6 @@ class Level1:
                         ))
                         self.moves_stack.append( (R,C) )  
 
-                for row in self.problem.map_list:
-                    for cell in row:
-                        if -1 in cell:
-                            print('x', end=' ')
-                        # if there is a seeker in that cell
-                        elif seeker in cell:
-                            print('S', end=' ')
-                        # if there is a hider in that cell
-                        elif any(isinstance(obj, Hider) for obj in cell):
-                            print('H', end=' ')
-                        elif any(isinstance(obj, Announcement) for obj in cell):
-                            print('A', end=' ')
-                        else:
-                            print('-', end=' ')
-                    print()
         return self.all_state
              
 class Level2:
