@@ -668,15 +668,15 @@ class Level2:
                     # skip if hider has been caught
 
                     self.__hider_take_turn(hider=hider)
-                    all_states.append(
-                        StateForFE(
-                            hiders=self.problem.hiders,
-                            seeker=seeker,
-                            announcements=self.announcements_on_map,
-                            is_end=False,
-                            score=seeker.score
-                        )
+                all_states.append(
+                    StateForFE(
+                        hiders=self.problem.hiders,
+                        seeker=seeker,
+                        announcements=self.announcements_on_map,
+                        is_end=False,
+                        score=seeker.score
                     )
+                )
             # ----------------------------------------------------------------------
             # ---------------------------SEEKER'S TURN------------------------------
             else:
@@ -900,7 +900,7 @@ class Level2:
                 )
 
 def main():
-    lv2 = Level2('test/map1_1.txt')
+    lv2 = Level2('test/map1_7.txt')
 
     states = lv2.run()
 
