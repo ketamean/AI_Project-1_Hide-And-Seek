@@ -171,6 +171,7 @@ def main():
     hiders = []
     for i in range(0, prob.num_row):
         for j in range(0, prob.num_col):
+            print(prob.map_list[i][j])
             if prob.map_list[i][j][0] == 1000:
                 map.tileIds[i * prob.num_col + j] = 0
             elif prob.map_list[i][j][0] == -1:
@@ -257,7 +258,10 @@ if __name__ == "__main__":
     if val == 1:
         prob = problem.Problem(input_filename='test/map1_1.txt', allow_move_obstacles=False)
     elif val == 2:
-        pass
+        import static_hiders
+        lv2 = static_hiders.Level2(input_filepath='test/map1_1.txt')
+        prob = lv2.problem
+        game = lv2.run()
     elif val == 3:
         prob = problem.Problem(input_filename='test/map1_1.txt', allow_move_obstacles=False)
         lv3 = dynamic_hiders.Level3(file_path='test/map1_1.txt')
