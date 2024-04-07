@@ -117,6 +117,7 @@ class Level3:
             if hider.coordinate == seeker.coordinate:
                 catch_list.append(hider)
         for hider in catch_list:
+            self.problem.map_list[hider.coordinate[0]][hider.coordinate[1]].remove(hider)
             self.problem.hiders.remove(hider)
             self.score += 20
 

@@ -184,6 +184,7 @@ def main():
     rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR)
     rl.set_target_fps(30)
     timer.start_timer(life_time=0.1)
+    score = 0
     while not rl.window_should_close():
         # --------USER CONTROL MOVEMENT (ONLY FOR DEBUGGING) --------
         user_control = False
@@ -193,6 +194,7 @@ def main():
         if len(game) and timer.is_timer_done():
             state: state_for_fe.StateForFE = game.pop(0)
             seeker.set_location(row=state.seeker.coordinate[0], col=state.seeker.coordinate[1], my_map=map)
+            score = state.score
             hiders.clear()
             for hider in state.hiders:
                 hiders.append(Hider(hider.coordinate[0], hider.coordinate[1]))
@@ -240,11 +242,8 @@ def main():
         # Check if hider is found
         for hider in hiders:
             hider.draw(True)
-        
-        if user_control:
-            rl.draw_text("ARROW KEYS to move", 10, screenHeight - 25, 20, rl.RAYWHITE)
-        else:
-            rl.draw_text("FILE INPUT to move", 10, screenHeight - 25, 20, rl.RAYWHITE)
+        rl.draw_text("score:" + str(score), 10, screenHeight - 45, 20, rl.RAYWHITE)
+        rl.draw_text("number of steps remaining: " + str(len(game)), 10, screenHeight - 25, 20, rl.RAYWHITE)
 
         rl.end_drawing()
 
