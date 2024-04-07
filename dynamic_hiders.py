@@ -13,7 +13,7 @@ class Level3:
         self.problem = cprob.Problem(input_filename=file_path, allow_move_obstacles=False)
         self.problem.seeker.origin_map = self.problem.map_list
         self.seeker_seen_cells = set()
-        self.path_save = [tuple]
+        self.path_save = []
         self.seeker_visited_cells = set()
         self.announcement = []
         self.path_to_cell = None
@@ -127,6 +127,8 @@ class Level3:
         seeker.vision()
         seeker_row, seeker_col = seeker.coordinate
         is_go_back = False
+        if self.path_to_cell != None and len(self.path_to_cell) == 0:
+            self.path_to_cell = None
         for i in range(self.problem.num_row):
             for j in range(self.problem.num_col):
                 if type(seeker.vision_map[i][j]) == bool and seeker.vision_map[i][j] == True:
@@ -152,21 +154,45 @@ class Level3:
             self.problem.map_list[new_row][new_col].append(seeker)
 
         # Nếu đang tìm hiểu xung quanh 1 announcement thì tìm tiếp, không thì tìm thông tin từ 1 announcement mới.
-        elif self.path_to_cell is not None:
+        elif self.path_to_cell != None:
+
             new_cell = self.path_to_cell.pop(0)
             self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
             seeker.coordinate = new_cell
             seeker.vision()
             self.problem.map_list[new_cell[0]][new_cell[1]].append(seeker)
+            if len(self.path_to_cell) == 0:
+                self.path_to_cell = None
         elif self.seeker_finds_announcements() is not None:
             announcement = self.seeker_finds_announcements()
             for i in range(max(0, announcement[0] - 3), min(announcement[0] + 3 + 1, self.problem.num_row)):
                 for j in range(max(0, announcement[1] - 3), min(announcement[1] + 3 + 1, self.problem.num_col)):
                     if (i, j) not in self.seeker_seen_cells:
                         path = astar(goal_coor=(i, j),grid=self.grid_for_astar, start_coor=seeker.coordinate)
-                        if path is not None:
+                        if path is not None and len(path) != 0:
                             self.path_to_cell = path
-                            pass
+                            new_cell = self.path_to_cell.pop(0)
+                            self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
+                            seeker.coordinate = new_cell
+                            seeker.vision()
+                            self.problem.map_list[new_cell[0]][new_cell[1]].append(seeker)
+                            break
+                if self.path_to_cell != None:
+                    break
+            if self.path_to_cell == None:
+                for i in range(max(0, announcement[0] - 3), min(announcement[0] + 3 + 1, self.problem.num_row)):
+                    for j in range(max(0, announcement[1] - 3), min(announcement[1] + 3 + 1, self.problem.num_col)):
+                        path = astar(goal_coor=(i, j), grid=self.grid_for_astar, start_coor=seeker.coordinate)
+                        if path is not None and len(path) != 0:
+                            self.path_to_cell = path
+                            new_cell = self.path_to_cell.pop(0)
+                            self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
+                            seeker.coordinate = new_cell
+                            seeker.vision()
+                            self.problem.map_list[new_cell[0]][new_cell[1]].append(seeker)
+                            break
+                    if self.path_to_cell != None:
+                        break
         else:
             cells_chosen = self.seeker_choose_cells()
             mx_new_seen, count_mx = -1, 0
@@ -189,12 +215,22 @@ class Level3:
                 self.problem.map_list[new_cell[0]][new_cell[1]].append(seeker)
             elif mx_new_seen == 0:
                 if len(self.path_save) == 0:
-                    self.is_concede = True
+                    for i in range(self.problem.num_row):
+                        for j in range(self.problem.num_col):
+                            if (i, j) not in self.seeker_seen_cells and (i, j) != seeker.coordinate:
+                                path = astar(goal_coor=(i, j), grid=self.grid_for_astar, start_coor=seeker.coordinate)
+                                if path is not None:
+                                    self.path_to_cell = path
+                                    break
+                        if self.path_to_cell != None:
+                            break
+
+                    if (self.path_to_cell == None):
+                        self.is_concede = True
                     return
                 else:
                     is_go_back = True
-                    new_cell = self.path_save[-1]
-                    self.path_save.pop()
+                    new_cell = self.path_save.pop()
                     self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
                     seeker.coordinate = new_cell
                     seeker.vision()
@@ -251,14 +287,20 @@ class Level3:
         return delta_row + hider.coordinate[0], delta_col + hider.coordinate[1]
     def hiders_announce(self):
         hiders = self.problem.hiders
+        is_announce_in_path = False
+        for ann in self.announcement:
+            if self.path_to_cell != None and self.path_to_cell[-1] == ann:
+                is_announce_in_path = True
+                break
+        if is_announce_in_path:
+            self.path_to_cell = None
         self.announcement.clear()
-        self.path_to_cell = None
         for hider in hiders:
             self.announcement.append(self.hider_random_announcement(hider))
     def run(self) -> list:
         time_count = 0
         all_states = []
-        while time_count < 100:
+        while time_count < 1e5:
             if len(self.problem.hiders) == 0:
                 self.is_concede = True
             time_count += 1
@@ -276,12 +318,9 @@ class Level3:
         return all_states
 
 
-
-
-
-
 class Level4:
     pass
+
 
 # for debugging
 if __name__ == "__main__":
