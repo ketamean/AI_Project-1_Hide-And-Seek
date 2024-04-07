@@ -95,6 +95,7 @@ class Level1:
             # If the open list is empty and the goal is not reached, return an empty path
             return []
     
+
     def __choose_step_no_info(self):
         """
             let seeker take a step when there is no percept of Hider and Announcement
@@ -268,14 +269,14 @@ class Level1:
         Returns nothing
         """
         hider.count_to_announcement += 1
-        if hider.count_to_announcement == hider.step_to_announcement:
+        if hider.count_to_announcement >= hider.step_to_announcement:
             # Reset count to announcement
             hider.count_to_announcement = 0
 
             # Raise an announcement for the hider
             announce = hider.announce()
             print('ANNOUNCE', announce.coordinate)
-            self.announcements_on_map.append( announce )
+            self.announcements_on_map.append(announce)
             row, col = announce.coordinate
 
             # Place the new announcement on the map
@@ -283,6 +284,7 @@ class Level1:
                 self.problem.map_list[row][col] = [announce]
             else:
                 self.problem.map_list[row][col].append(announce)
+
 
     def run(self):
         from copy import deepcopy, copy
@@ -324,7 +326,6 @@ class Level1:
                     announcements=self.announcements_on_map
                 )
                 seeker_turn = not seeker_turn
-                pass
 
             # SEEKER MOVE
             else:
@@ -343,6 +344,22 @@ class Level1:
                 # Check for existence of Hider or Announcement in the vision
                 hider_found = False
                 announcement_found = False
+
+                for hider in self.problem.hiders:
+                    if seeker.coordinate == hider.coordinate:
+                        # Capture the hider
+                        self.problem.hiders.remove(hider)
+                        print("Hider captured by the seeker!")
+                        # Check for victory conditions
+                        if not self.problem.hiders:
+                            print("All hiders captured! Seeker wins!")
+                            return
+                        break
+
+                # Check if seeker encounters an announcement
+                for announcement in self.announcements_on_map:
+                    if seeker.coordinate == announcement.coordinate:
+                        self.problem.remove(announcement)
 
                 for idrow in range(-seeker.radius, seeker.radius + 1, +1):
                     # check index validity
@@ -450,12 +467,12 @@ class Level1:
                         # there is an announcement, find path to announcement
 
                         # There is only an announcement in sight, move towards it
-                        if len(announcement_coor) == 1:
-                            announcement_coor = announcement_coor[0]
-                        else:
-                            # Multiple announcements, prioritize the latest one
-                            announcement_coor = announcement_coor[-1]
-                        res = self.__move_towards_target(announcement_coor)
+                        cur_announcement = announcement_coor[-1]
+                        print('actual announcement', cur_announcement)
+
+                        res = self.__move_towards_target(cur_announcement)
+                        for i in res:
+                            print(i)
                         if res:
                             for i, j in res:
                                 print('seeker move to announcement', (i, j))
@@ -492,6 +509,7 @@ class Level1:
                                     self.problem.map_list[i][j].append(seeker)
                                 self.moves_stack.append((i, j))
 
+                                #========================================
                                 print('MOVE TOWARDS ANNOUNCEMENT')
                                 for row in self.problem.map_list:
                                     for cell in row:
@@ -506,6 +524,7 @@ class Level1:
                                         else:
                                             print('-', end=' ')  # Empty cell
                                     print()
+                                #==================================
 
                 
                 else:
