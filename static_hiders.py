@@ -5,7 +5,6 @@ from pq import *
 from astar import *
 from queue import PriorityQueue
 from state_for_fe import StateForFE
-import astar
 class Level1:
     announcement = []
     def __init__(self, input_filepath:str) -> None:
@@ -14,33 +13,6 @@ class Level1:
             input_filename=input_filepath,
             allow_move_obstacles=False
         )
-
-    ADJACENT = [
-        (-1,-1),    (-1,0),     (-1,1),
-        (0,-1),                 (0,1),
-        (1,-1),     (1,0),      (1,1)
-    ]
-    @staticmethod
-    def is_adjacent(tile1: tuple, tile2: tuple):
-        """
-            check whether tile 1 adjacent to tile 2
-
-            tiles are given as their coordinate
-        """
-        for dr,dc in Level2.ADJACENT:
-            if tile1[0] + dr == tile2[0] and tile1[1] + dc == tile2[1]:
-                return True
-        return False
-    
-    def move_seeker_to(self, coordinate: tuple):
-        """
-            assign current coordinate to self.last_step
-            remove seeker from old tile
-            add it to the new tile
-            assign new coordinate to the seeker
-
-            no return
-        """
         seeker = self.problem.seeker
         seeker.origin_map = self.problem.map_list
 
@@ -126,77 +98,20 @@ class Level1:
 
     def __choose_step_no_info(self):
         """
-            returns new path to other cell in the region of the announcement that we have not seen;
-            or None if there is no cell
-        """
-        seeker = self.problem.seeker
-        cur_r, cur_c = seeker.coordinate
-        ann_radius = self.problem.hiders[0].radius
-        ann_coor = self.current_announcement['coordinate']
-        for idrow in range(ann_coor[0] - ann_radius, ann_coor[0] + ann_radius + 1, +1):
-            # check index validity
-            if idrow < 0:
-                break
-            if idrow >= len(seeker.vision_map):
-                break
-            for idcol in range(ann_coor[1] - ann_radius, ann_coor[1] + ann_radius + 1, +1):
-                # check index validity
-                if idcol < 0:
-                    break
-                if idcol >= len(seeker.vision_map):
-                    break
-                if idrow == cur_r and idcol == cur_c:
-                    continue
-                if self.seen_map[idrow][idcol] == False and self.reachable[idrow][idcol] == True:
-                    # cell in the region of the announcement but we have not seen it yet
-                    path = astar.astar(
-                        grid=self.astar_map,
-                        start_coor=(cur_r, cur_c),
-                        goal_coor=(idrow, idcol)
-                    )
-                    if not path or len(path) == 0:
-                        self.reachable[idrow][idcol] = False
-                    return path
-        return None
-    
-    def __hider_take_turn(self, hider: Hider):
-        """
-            a hider in the list of hiders takes its turn:
-                - increase count to announcement
-                - if needed, raise an announcement and put it onto the map
+            let seeker take a step when there is no percept of Hider and Announcement
 
-            id: index of hider in the list of hider in the problem, and it is also ID of the hider
-            returns nothing
+            returns False if end game (no cell to go); otherwise, a list of steps (as coordinates)
         """
-        hider.count_to_announcement += 1
-        if hider.count_to_announcement == hider.step_to_announcement:
-            if len(self.announcements_on_map) == self.total_hiders:
-                # reset list of current announcements on the map
-                self.announcements_on_map = []
-            hider.count_to_announcement = 0
-            announce = hider.announce()
-            self.announcements_on_map.append( announce )
-            if 1000 in self.problem.map_list[ announce.coordinate[0] ][ announce.coordinate[1] ]:
-                self.problem.map_list[ announce.coordinate[0] ][ announce.coordinate[1] ] = [ announce ]
-            else:
-                self.problem.map_list[ announce.coordinate[0] ][ announce.coordinate[1] ].append( announce )
-
-    def __seeker_blind_step_check_potential_directions(self):
-        """
-            returns 2 things:
-                - LIST of direction (as a coordinate in terms of a tuple) that has maximum number of new and visible cells
-                - the max number of new and visible cells
-        """
-        # avoid steping back to the previous step
         from copy import deepcopy
-        last_r, last_c = self.last_step     # the previous coordinate of the agent
         seeker = self.problem.seeker
         cur_r,cur_c = seeker.coordinate     # current coordinate of the agent
+
         DIRECTIONS = [
             (cur_r-1, cur_c-1), (cur_r-1, cur_c),   (cur_r-1, cur_c+1),
             (cur_r, cur_c-1),                       (cur_r, cur_c+1),
             (cur_r+1, cur_c-1), (cur_r+1, cur_c),   (cur_r+1, cur_c+1)
         ]
+
         if len(self.moves_stack) == 0:
             # the first step => has no previous step
             pass
@@ -232,27 +147,6 @@ class Level1:
                     self.vision_maps[ (idr, idc) ] = v_map
                 cnt = 0
 
-                # print debug
-                #=============================================
-                # print('vmap:', idr, idc)
-                # for idrow in v_map:
-                #     for cell in idrow:
-                #         print(cell, end=' ')
-                #         # if cell == True:
-                #         #     print(1, end=' ')
-                #         # else:
-                #         #     print(0, end=' ')
-                #     print()
-                # print('seenmap:', idr, idc)
-                # for idrow in self.seen_map:
-                #     for cell in idrow:
-                #         if cell == True:
-                #             print(1, end=' ')
-                #         else:
-                #             print(0, end=' ')
-                #     print()
-                #=============================================
-
                 # traverse vision map of the potentially next step
                 for idrow in range(idr-seeker.radius, idr+seeker.radius + 1, +1):
                     # check index validity
@@ -278,73 +172,68 @@ class Level1:
                 elif cnt == max_count_val:
                     max_coordinate.append( (idr, idc) )
 
-            # print('max:', max_count_val)
-            # print('n cell:', len(max_coordinate))
-            # for i in max_coordinate:
-            #     print(i)
             if len(max_coordinate) == 0:
                 # is blocked, cannot move to any adjacent cells
-                return False
-            elif len(max_coordinate) > 1:
+                return None
                 # many cells share a common heuristic value
-                if max_count_val == 0:
-                    # h = 0: no new vision
-                    radius = seeker.radius + 1
-                    stop_flag = True  # to check whether we expanded the whole map
-                    while stop_flag:
-                        stop_flag = False
-                        cells = []
+            elif max_count_val == 0:
+                # h = 0: no new vision
+                radius = seeker.radius + 1
+                stop_flag = True  # to check whether we expanded the whole map
+                while stop_flag:
+                    stop_flag = False
+                    cells = []
 
-                        for row in range(cur_r - radius, cur_r + radius + 1):
-                            if row < 0:
+                    for row in range(cur_r - radius, cur_r + radius + 1):
+                        if row < 0:
+                            continue
+                        if row >= len(seeker.origin_map):
+                            break
+                        for col in range(cur_c - radius, cur_c + radius + 1):
+                            if col < 0:
                                 continue
-                            if row >= len(seeker.origin_map):
+                            if col >= len(seeker.origin_map[0]):
                                 break
-                            for col in range(cur_c - radius, cur_c + radius + 1):
-                                if col < 0:
-                                    continue
-                                if col >= len(seeker.origin_map[0]):
-                                    break
-                                if -1 in seeker.origin_map[row][col]:
-                                    # skip wall
-                                    continue
-                                if self.seen_map[row][col] == False:
-                                    cells.append({
-                                        'coordinate': (row, col),
-                                        'distance': abs(row - cur_r) + abs(col - cur_c)  # Manhattan distance
-                                    })
-                        if len(cells):
-                            # Sort cells by Manhattan distance
-                            cells.sort(key=lambda x: x['distance'])
-                            # for x in cells:
-                                # print('cells:', x['coordinate'])
-                            for cell_data in cells:
-                                res = self.__move_towards_target(cell_data['coordinate'])
-                                if res:
-                                    for i, j in res:
-                                        # print('res:', res)
-                                        if (i, j != self.moves_stack[-1]):
-                                            return [(i, j)]
-                        radius += 1
-                        stop_flag = True
+                            if -1 in seeker.origin_map[row][col]:
+                                # skip wall
+                                continue
+                            if self.seen_map[row][col] == False:
+                                cells.append({
+                                    'coordinate': (row, col),
+                                    'distance': abs(row - cur_r) + abs(col - cur_c)  # Manhattan distance
+                                })
+                    if len(cells):
+                        # Sort cells by Manhattan distance
+                        cells.sort(key=lambda x: x['distance'])
+                        # for x in cells:
+                            # print('cells:', x['coordinate'])
+                        for cell_data in cells:
+                            res = self.__move_towards_target(cell_data['coordinate'])
+                            if res:
+                                for i, j in res:
+                                    # print('res:', res)
+                                    if (i, j != self.moves_stack[-1]):
+                                        return [(i, j)]
+                    radius += 1
+                    stop_flag = True
                         # if (radius + cur_c < len(seeker.origin_map[0]) or radius + cur_c > 0) and (radius + cur_r < len(seeker.origin_map) or radius + cur_r > 0):
                         #     radius += 1
                         # else:
                         #     # No path found to any reachable unseen cell
                         #     return False
 
-                else:
-                    # h != 0: choose the cell whose Manhattan distance from the previous cell is the largest
-                    max_distance = -1
-                    max_distance_coor = None
-                    for i, j in max_coordinate:
-                        tmp_dis = abs(last_r - i) + abs(last_c - j)
-                        if tmp_dis > max_distance:
-                            max_distance_coor = (i, j)
-                    return [max_distance_coor]
-            else:
-                print('max coordinate:', (max_coordinate[0]))
-                return [(max_coordinate[0])]
+            elif len(max_coordinate) == 1:
+                return [max_coordinate[0]]
+            elif len(max_coordinate) > 1:
+                 # h != 0: choose the cell whose Manhattan distance from the previous cell is the largest
+                max_distance = -1
+                max_distance_coor = None
+                for i, j in max_coordinate:
+                    tmp_dis = abs(last_r - i) + abs(last_c - j)
+                    if tmp_dis > max_distance:
+                        max_distance_coor = (i, j)
+                return [max_distance_coor]
+            
     
     def __hider_take_turn(self, hider: Hider):
         """
@@ -641,6 +530,7 @@ class Level1:
         seeker = self.problem.seeker
         self.hider_coor = []
         self.announcement_coor = []
+        self.seeker_path = []
         self.moves_stack = [ copy(seeker.coordinate) ]                   # stack of steps of seeker
 
         self.vision_maps = {                    # map a coordinate with the corresponding vision map for later reuse
@@ -662,6 +552,7 @@ class Level1:
         # if len(self.problem.hiders) != 1:
         #     raise ValueError('Hider not exist or out of range.')
 
+        current_state_end = False
         while True:
             if not seeker_turn:
                 # # hider raise announcement
@@ -669,11 +560,11 @@ class Level1:
                 self.__hider_take_turn(hider)
 
                 yield StateForFE(
-                    player=hider,
-                    old_row=hider.coordinate[0],
-                    old_col=hider.coordinate[1],
-                    new_row=hider.coordinate[0],
-                    new_col=hider.coordinate[1],
+                    player=seeker,
+                    old_row=self.moves_stack[-1][0],
+                    old_col=self.moves_stack[-1][1],
+                    new_row=R,
+                    new_col=C,
                     announcements=self.announcements_on_map
                 )
                 seeker_turn = not seeker_turn
@@ -690,6 +581,7 @@ class Level1:
                 if self.total_hiders == 0:
                     # done game
                     return
+                    current_state_end = True
 
 
                 # CHECK IN CASE SEEKER CANNOT FIND OUT HIDER -> GIVE UP
@@ -718,10 +610,17 @@ class Level1:
                     #  THERE IS NO HIDER OR ANNOUNCEMENT IN THE SEEKER RANGE, SO IT WILL TAKE A BLIND STEP
                     res = self.__choose_step_no_info()
 
-                    if res == None:
-                        # give up
-                        print("No cell to go")
-                        return [], False
+                    if len(res) == 0:
+                        # No new vision
+                        return [],False
+                    
+
+                    # if res == None:
+                    # if abs(seeker.score) > ((len(self.problem.map_list) * len(self.problem.map_list[0]))/2):
+                    #     # give up
+                    #     print("No cell to go")
+                    #     return [],False
+                    #     current_state_end = True
                     for R, C in res:
                         self.problem.map_list[r][c].remove( seeker )
                         seeker.coordinate = (R,C)
@@ -760,6 +659,11 @@ class Level1:
                         seeker.score -= 1
 
                         yield StateForFE(
+                            # seeker=self.problem.seeker,
+                            # hiders=self.problem.hiders,
+                            # announcements=self.announcements_on_map,
+                            # score=seeker.score,
+                            # is_end=current_state_end
                             player=seeker,
                             old_row=self.moves_stack[-1][0],
                             old_col=self.moves_stack[-1][1],
@@ -785,21 +689,19 @@ class Level1:
                             print('-', end=' ')
                     print()
 
-
-
-            for row in self.seen_map:
-                for cell in row:
-                    if cell == -1:
-                        print('x', end=' ')
-                    elif cell == 1000:
-                        print('-', end=' ')
-                    elif cell:
-                        print(1, end=' ')
-                    else:
-                        print(0, end=' ')
-                print()
-            # -----------------------------------------------------------------       
-
+            # for row in self.seen_map:
+            #     for cell in row:
+            #         if cell == -1:
+            #             print('x', end=' ')
+            #         elif cell == 1000:
+            #             print('-', end=' ')
+            #         elif cell:
+            #             print(1, end=' ')
+            #         else:
+            #             print(0, end=' ')
+            #     print()
+            # -----------------------------------------------------------------      
+             
 class Level2:
     """
         steps_stack: top stack is at the end of the array
@@ -1345,12 +1247,10 @@ class Level2:
                     self.__hider_take_turn(hider=hider)
 
                     yield StateForFE(
-                        player=hider,
-                        old_row=hider.coordinate[0],
-                        old_col=hider.coordinate[1],
-                        new_row=hider.coordinate[0],
-                        new_col=hider.coordinate[1],
-                        announcements=self.announcements_on_map
+                        seeker=seeker,
+                        hiders=self.problem.hiders,
+                        announcements=self.announcements_on_map,
+                        score=False
                     )
                 seeker_turn = not seeker_turn
             # ----------------------------------------------------------------------
