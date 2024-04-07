@@ -1,8 +1,12 @@
 import pyray as rl
 import random
+
+import dynamic_hiders
 import fe_menu
 import problem
 import player
+import state_for_fe
+from dynamic_hiders import *
 
 # -------------------ELEMENTS-------------------
 MAP_TILE_SIZE = 20
@@ -14,8 +18,26 @@ MAP_NUM_COL:int
 MAP_NUM_ROW: int
 SCREEN_WIDTH: int
 SCREEN_HEIGHT: int
+# -----------------------GAME-------------------
+game = None
 
 
+class TimerClass:
+    def __init__(self):
+        self.start_time = float
+        self.life_time = float
+    def start_timer(self, life_time) -> None:
+        self.start_time = rl.get_time()
+        self.life_time = life_time
+
+    def is_timer_done(self):
+        return rl.get_time() - self.start_time >= self.life_time
+
+    def get_elapse_time(self):
+        return rl.get_time() - self.start_time
+
+
+timer = TimerClass()
 class Map:
     def __init__(self):
         self.tiles_row = 0  # Number of tiles in row
@@ -67,6 +89,14 @@ class Seeker:
         self.tile_col = int((self.position.x + MAP_TILE_SIZE / 2) / MAP_TILE_SIZE)
         self.tile_row = int((self.position.y + MAP_TILE_SIZE / 2) / MAP_TILE_SIZE)
 
+    def set_location(self, row, col, my_map: Map):
+        self.position.x = col * MAP_TILE_SIZE
+        self.position.y = row * MAP_TILE_SIZE
+
+        self.tile_col = col
+        self.tile_row = row
+
+
     def draw(self):
         rl.draw_rectangle_v(self.position, rl.Vector2(PLAYER_SIZE, PLAYER_SIZE), rl.RED)
 
@@ -80,8 +110,15 @@ class Hider:
         self.tile_col = col
         self.tile_row = row
 
+    def set_location(self, row, col, my_map: Map):
+        self.position.x = col * MAP_TILE_SIZE
+        self.position.y = row * MAP_TILE_SIZE
+
+        self.tile_col = col
+        self.tile_row = row
+
     def draw(self, if_found):
-        rl.draw_rectangle_v(self.position, rl.Vector2(PLAYER_SIZE, PLAYER_SIZE), rl.ORANGE if if_found else rl.GREEN)
+        rl.draw_rectangle_v(self.position, rl.Vector2(PLAYER_SIZE, PLAYER_SIZE), rl.GREEN)
     
     def if_found(self, seeker):
         if self.tile_col == seeker.tile_col and self.tile_row == seeker.tile_row:
@@ -132,46 +169,53 @@ def main():
     # NOTE: Map tile ids should be probably loaded from an external map file (by definition: 0: empty, 1: obstacle (
     # yellow), 2: wall (static, black)) Load map tiles (generating 2 random tile ids for testing)
     hiders = []
+    seeker = Seeker(0, 0)
     for i in range(0, prob.num_row):
         for j in range(0, prob.num_col):
             if prob.map_list[i][j][0] == 1000:
                 map.tileIds[i * prob.num_col + j] = 0
             elif prob.map_list[i][j][0] == -1:
                 map.tileIds[i * prob.num_col + j] = 2
-            elif type(prob.map_list[i][j][0]) == player.Seeker:
-                seeker = Seeker(i, j)
-            elif type(prob.map_list[i][j][0]) == player.Hider:
-                hiders.append(Hider(i, j))
+
 
     # Seeker position in the map (default tile: 0,0)
-
     # Create a render texture to store the fog of war
     fogOfWar = rl.load_render_texture(map.tiles_col, map.tiles_row)
     rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR)
-
     rl.set_target_fps(30)
+    timer.start_timer(life_time=0.1)
+    score = 0
 
     while not rl.window_should_close():
         # --------USER CONTROL MOVEMENT (ONLY FOR DEBUGGING) --------
-        user_control = True
+        user_control = False
         if user_control:
             handle_input(map, seeker)
-        # --------FILE INPUT MOVEMENT--------
-
+        # --------AUTO INPUT MOVEMENT--------
         # Previous visited tiles are set to partial fog
-        for i in range(map.tiles_row * map.tiles_col):
-            if map.tileFog[i] == 1:
-                map.tileFog[i] = 2 
-
+        if len(game) and timer.is_timer_done():
+            state: state_for_fe.StateForFE = game.pop(0)
+            seeker.set_location(row=state.seeker.coordinate[0], col=state.seeker.coordinate[1], my_map=map)
+            score = state.score
+            hiders.clear()
+            for i in range(map.tiles_row * map.tiles_col):
+                if map.tileFog[i] == 1:
+                    map.tileFog[i] = 2
+            for hider in state.hiders:
+                hiders.append(Hider(hider.coordinate[0], hider.coordinate[1]))
+            for row in range(max(0, seeker.tile_row - PLAYER_TILE_VISIBILITY),
+                             min(map.tiles_row, seeker.tile_row + PLAYER_TILE_VISIBILITY + 1)):
+                for col in range(max(0, seeker.tile_col - PLAYER_TILE_VISIBILITY),
+                                 min(map.tiles_col, seeker.tile_col + PLAYER_TILE_VISIBILITY + 1)):
+                    if state.seeker.vision_map[row][col]:
+                        map.tileFog[row * map.tiles_col + col] = 1  # Set tile to visible
+            timer.start_timer(life_time=0.1)
         # Check visibility and update fog
         # NOTE: It is important to check tilemap limits to avoid processing tiles out-of-array-bounds (it could crash program)
-        for row in range(max(0, seeker.tile_row - PLAYER_TILE_VISIBILITY), min(map.tiles_row, seeker.tile_row + PLAYER_TILE_VISIBILITY + 1)):
-            for col in range(max(0, seeker.tile_col - PLAYER_TILE_VISIBILITY), min(map.tiles_col, seeker.tile_col + PLAYER_TILE_VISIBILITY + 1)):
-                map.tileFog[row * map.tiles_col + col] = 1  # Set tile to visible
-                # Due to a problem with x and y cords turned into tiles, 
+                # Due to a problem with x and y cords turned into tiles,
                 # the edge of the map is visible when seeker is at the edge on the opposite side
                 # CURRENTLY UNFIXABLE
-                    
+
         # -----------------------------RENDERING-----------------------------
         # TEXTURE
         rl.begin_texture_mode(fogOfWar)
@@ -201,15 +245,9 @@ def main():
 
         # Check if hider is found
         for hider in hiders:
-            if hider.if_found(seeker):
-                hider.draw(True)
-            else:
-                hider.draw(False)
-        
-        if user_control:
-            rl.draw_text("ARROW KEYS to move", 10, screenHeight - 25, 20, rl.RAYWHITE)
-        else:
-            rl.draw_text("FILE INPUT to move", 10, screenHeight - 25, 20, rl.RAYWHITE)
+            hider.draw(True)
+        rl.draw_text("score:" + str(score), 10, screenHeight - 45, 20, rl.RAYWHITE)
+        rl.draw_text("number of steps remaining: " + str(len(game)), 10, screenHeight - 25, 20, rl.RAYWHITE)
 
         rl.end_drawing()
 
@@ -221,11 +259,13 @@ if __name__ == "__main__":
     # Menu
     val = fe_menu.main_menu()
     if val == 1:
-        prob = problem.Problem(input_filename='map1_1.txt', allow_move_obstacles=False)
+        prob = problem.Problem(input_filename='test/map1_1.txt', allow_move_obstacles=False)
     elif val == 2:
         pass
     elif val == 3:
-        pass
+        prob = problem.Problem(input_filename='test/map1_4.txt', allow_move_obstacles=False)
+        lv3 = dynamic_hiders.Level3(file_path='test/map1_4.txt')
+        game = lv3.run()
     elif val == 4:
         pass
     MAP_NUM_COL = prob.num_col
