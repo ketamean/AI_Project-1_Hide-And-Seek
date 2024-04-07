@@ -36,76 +36,6 @@ class Level1:
         (0,-1),                 (0,1),
         (1,-1),     (1,0),      (1,1)
     ]
-    
-    # def __move_towards_target(self, target_coor: tuple):
-    #     print(target_coor, 'target')
-    #     """
-    #     Move the seeker towards the target cell until it reaches the target.
-
-    #     Returns a list of steps (as coordinates) taken by the seeker.
-    #     """
-    #     last_move = []
-    #     last_move.append(self.moves_stack[-1])
-
-    #     tmp_seeker = Seeker(
-    #         coordinate=self.problem.seeker.coordinate
-    #     )
-    #     tmp_seeker.origin_map = self.problem.seeker.origin_map
-    #     tmp_seeker.skeleton_map = self.problem.seeker.skeleton_map
-    #     seeker_path = []
-
-    #     while tmp_seeker.coordinate != target_coor:
-    #         cur_r, cur_c = tmp_seeker.coordinate
-    #         target_r, target_c = target_coor
-
-    #         # Determine the direction to move towards the target cell
-    #         move_direction = (
-    #             1 if target_r > cur_r else -1 if target_r < cur_r else 0,
-    #             1 if target_c > cur_c else -1 if target_c < cur_c else 0
-    #         )
-
-    #         # Attempt to move in the chosen direction
-    #         next_r = cur_r + move_direction[0]
-    #         next_c = cur_c + move_direction[1]
-
-    #         print('list of last move', last_move)
-    #         # If the chosen direction is blocked or out of bounds, try alternative directions
-    #         if (next_r < 0 or next_r >= len(self.problem.map_list) or
-    #                 next_c < 0 or next_c >= len(self.problem.map_list[0]) or
-    #                 -1 in self.problem.map_list[next_r][next_c]):
-    #             alternative_found = False
-    #             for dr, dc in Level1.ADJACENT:
-    #                 next_r = cur_r + dr
-    #                 next_c = cur_c + dc
-    #                 # Check if the alternative direction is valid
-    #                 if (next_r >= 0 and next_r < len(self.problem.map_list) and
-    #                         next_c >= 0 and next_c < len(self.problem.map_list[0]) and
-    #                         -1 not in self.problem.map_list[next_r][next_c]): # and (next_r, next_c != last_move[-1]):
-    #                     # Move in the alternative direction
-    #                     seeker_path.append((next_r, next_c))
-    #                     last_move.append((cur_r, cur_c))
-                        
-    #                     print('alternative:', (next_r, next_c))
-    #                     tmp_seeker.coordinate = (next_r, next_c)
-    #                     alternative_found = True
-    #                     break  # Exit the loop after finding a valid direction
-                    
-    #             # If no alternative direction is found, return an empty path
-    #             if not alternative_found:
-    #                 return []
-
-    #         # elif ((next_r, next_c) not in last_move):
-    #         else:
-    #             # Move in the initially chosen direction
-    #             seeker_path.append((next_r, next_c))
-    #             last_move.append((cur_r, cur_c))
-    #             print('alternative1:', (next_r, next_c))
-    #             tmp_seeker.coordinate = (next_r, next_c)
-    #             alternative_found = True
-    #         # else:
-    #         #     continue
-
-    #     return seeker_path
 
     def __move_towards_target(self, target_coor: tuple):
             """
@@ -260,8 +190,8 @@ class Level1:
                 elif cnt == max_count_val:
                     max_coordinate.append( (idr, idc) )
 
-            print('max:', max_count_val)
-            print('n cell:', len(max_coordinate))
+            # print('max:', max_count_val)
+            # print('n cell:', len(max_coordinate))
             # for i in max_coordinate:
             #     print(i)
             if len(max_coordinate) == 0:
@@ -368,199 +298,240 @@ class Level1:
             [True if cell == -1 else False for cell in row ] for row in seeker.skeleton_map
         ]                                       # True / False
 
+        seeker_turn = True
+        self.announcements_on_map = None
+        self.current_announcement = None
+        self.last_step = seeker.coordinate
+
+        # HANDLE NO HIDER CASE
+
+        if len(self.problem.hiders) != 1:
+            raise ValueError('Hider not exist or out of range.')
+
         while True:
-            r,c = seeker.coordinate
-            self.moves_stack = [ copy(seeker.coordinate) ]  
-            self.cur_vision_maps = self.vision_maps.get( (r,c) )
-            print('cur:', r, c)
-            print('previous step:', self.moves_stack[-1])
-            if self.cur_vision_maps == None:
-                seeker.vision()
-                self.cur_vision_maps = deepcopy(seeker.vision_map)
-                self.vision_maps[ (r,c) ] = self.cur_vision_maps
+            if not seeker_turn:
+                # hider raise announcement
+                hider = self.problem.hiders[0]
+                self.__hider_take_turn(hider=hider)
 
-            # Check for existence of Hider or Announcement in the vision
-            hider_found = False
-            announcement_found = False
+                yield StateForFE(
+                    player=hider,
+                    old_row=hider.coordinate[0],
+                    old_col=hider.coordinate[1],
+                    new_row=hider.coordinate[0],
+                    new_col=hider.coordinate[1],
+                    announcements=self.announcements_on_map
+                )
+                seeker_turn = not seeker_turn
 
-            for idrow in range(-seeker.radius, seeker.radius + 1, +1):
-                # check index validity
-                if r + idrow < 0:
-                    continue
-                if r + idrow >= len(self.cur_vision_maps):
-                    break
-                for idcol in range(-seeker.radius, seeker.radius + 1, +1):
-                    if idcol == 0 and idrow == 0:
-                        continue
+            # SEEKER MOVE
+            else:
+                seeker_turn = not seeker_turn
+                r,c = seeker.coordinate
+
+                self.moves_stack = [ copy(seeker.coordinate) ]  
+                self.cur_vision_maps = self.vision_maps.get( (r,c) )
+                print('cur:', r, c)
+                print('previous step:', self.moves_stack[-1])
+                if self.cur_vision_maps == None:
+                    seeker.vision()
+                    self.cur_vision_maps = deepcopy(seeker.vision_map)
+                    self.vision_maps[ (r,c) ] = self.cur_vision_maps
+
+                # Check for existence of Hider or Announcement in the vision
+                hider_found = False
+                announcement_found = False
+
+                for idrow in range(-seeker.radius, seeker.radius + 1, +1):
                     # check index validity
-                    if c + idcol < 0:
+                    if r + idrow < 0:
                         continue
-                    if c + idcol >= len(self.cur_vision_maps[0]):
+                    if r + idrow >= len(self.cur_vision_maps):
                         break
-                    if self.cur_vision_maps[idrow][idcol] != 0 and self.cur_vision_maps[idrow][idcol] != -1:
-                        for element in self.problem.map_list[r + idrow][c + idcol]:
-                            if not isinstance(element, int):
-                                # not -1 or 0 => is object
-                                if element.signature == 'Hider':
-                                    hider_coor.append((r + idrow, c + idcol))
-                                    hider_found = True
-                                elif element.signature == 'Announcement':
-                                    announcement_coor.append((r + idrow, c + idcol))
-                                    announcement_found = True
+                    for idcol in range(-seeker.radius, seeker.radius + 1, +1):
+                        if idcol == 0 and idrow == 0:
+                            continue
+                        # check index validity
+                        if c + idcol < 0:
+                            continue
+                        if c + idcol >= len(self.cur_vision_maps[0]):
+                            break
+                        if self.cur_vision_maps[idrow][idcol] != 0 and self.cur_vision_maps[idrow][idcol] != -1:
+                            for element in self.problem.map_list[r + idrow][c + idcol]:
+                                if not isinstance(element, int):
+                                    # not -1 or 0 => is object
+                                    if element.signature == 'Hider':
+                                        hider_coor.append((r + idrow, c + idcol))
+                                        hider_found = True
+                                    elif element.signature == 'Announcement':
+                                        announcement_coor.append((r + idrow, c + idcol))
+                                        announcement_found = True
+
+                        if hider_found or announcement_found:
+                            break  # Exit the loop if either a Hider or Announcement is found
 
                     if hider_found or announcement_found:
                         break  # Exit the loop if either a Hider or Announcement is found
 
-                if hider_found or announcement_found:
-                    break  # Exit the loop if either a Hider or Announcement is found
-
-
-            if len(hider_coor) or len(announcement_coor):
-                if len(hider_coor):
-                    # there is a hider, go to this
-                    if len(hider_coor) > 1:
-                        # many hiders
-                        raise ValueError('There are more than 1 hider in this map.')
-                    else:
-                        # only 1 hider
-                        hider_coor = hider_coor[0]
-                        print('hider', hider_coor)
-                        res = self.__move_towards_target(hider_coor)
-                        if res:
-                            for i, j in res:
-                                self.problem.map_list[r][c].remove(seeker)
-                                r, c = i, j                 # Update seeker's position to current cell
-                                seeker.coordinate = (i, j)  # Update seeker's position to move towards the Hider
-                                visionmap = self.vision_maps.get((i, j))
-                                if visionmap == None:
-                                    tmp_seeker = Seeker(
-                                        coordinate=(i, j)
-                                    )
-                                    tmp_seeker.origin_map = seeker.origin_map
-                                    tmp_seeker.skeleton_map = seeker.skeleton_map
-                                    tmp_seeker.vision()
-                                    visionmap = deepcopy(tmp_seeker.vision_map)
-                                    self.vision_maps[(i, j)] = visionmap
-                                # after choosing a cell, assign new vision to the seen map
-                                for idr in range(i - seeker.radius, i + seeker.radius + 1, +1):
-                                    if idr < 0:
-                                        continue
-                                    if idr >= len(seeker.vision_map):
-                                        break
-                                    for idc in range(j - seeker.radius, j + seeker.radius + 1, +1):
-                                        if idc < 0:
+                # CHECK IN CASE SEEKER CANNOT FIND OUT HIDER -> GIVE UP
+                flag_reach_all = True
+                for row in self.seen_map:
+                    for cell in row:
+                        if cell == False:
+                            flag_reach_all = not flag_reach_all
+                    if not flag_reach_all: break
+                if flag_reach_all:
+                    # traverse through the whole map, return
+                    return
+                
+                if len(hider_coor) or len(announcement_coor):
+                    if len(hider_coor):
+                        # there is a hider, go to this
+                        if len(hider_coor) > 1 and seeker.coordinate == hider_coor:
+                            # SUCESSFULLY FOUND HIDER
+                            print('FOUND HIDER:', (hider_coor), "SEEKER:", (seeker.coordinate))
+                            return
+                        else:
+                            # only 1 hider
+                            hider_coor = hider_coor[0]
+                            print('hider', hider_coor)
+                            res = self.__move_towards_target(hider_coor)
+                            if res:
+                                for i, j in res:
+                                    self.problem.map_list[r][c].remove(seeker)
+                                    r, c = i, j                 # Update seeker's position to current cell
+                                    seeker.coordinate = (i, j)  # Update seeker's position to move towards the Hider
+                                    visionmap = self.vision_maps.get((i, j))
+                                    if visionmap == None:
+                                        tmp_seeker = Seeker(
+                                            coordinate=(i, j)
+                                        )
+                                        tmp_seeker.origin_map = seeker.origin_map
+                                        tmp_seeker.skeleton_map = seeker.skeleton_map
+                                        tmp_seeker.vision()
+                                        visionmap = deepcopy(tmp_seeker.vision_map)
+                                        self.vision_maps[(i, j)] = visionmap
+                                    # after choosing a cell, assign new vision to the seen map
+                                    for idr in range(i - seeker.radius, i + seeker.radius + 1, +1):
+                                        if idr < 0:
                                             continue
-                                        if idc >= len(seeker.vision_map[0]):
+                                        if idr >= len(seeker.vision_map):
                                             break
-                                        if visionmap[idr][idc] == True:
-                                            self.seen_map[idr][idc] = True
-                                if 1000 in self.problem.map_list[i][j]:
-                                    self.problem.map_list[i][j] = [seeker]
-                                else:
-                                    self.problem.map_list[i][j].append(seeker)
-                                self.moves_stack.append((i, j))
+                                        for idc in range(j - seeker.radius, j + seeker.radius + 1, +1):
+                                            if idc < 0:
+                                                continue
+                                            if idc >= len(seeker.vision_map[0]):
+                                                break
+                                            if visionmap[idr][idc] == True:
+                                                self.seen_map[idr][idc] = True
+                                    if 1000 in self.problem.map_list[i][j]:
+                                        self.problem.map_list[i][j] = [seeker]
+                                    else:
+                                        self.problem.map_list[i][j].append(seeker)
+                                    self.moves_stack.append((i, j))
 
-                                print('MOVE TOWARDS HIDER')
-                                for row in self.problem.map_list:
-                                    for cell in row:
-                                        if -1 in cell:
-                                            print('x', end=' ')
-                                        # if there is a seeker in that cell
-                                        elif seeker in cell:
-                                            print('S', end=' ')
-                                        # if there is a hider in that cell
-                                        elif len(cell) == 1 and isinstance(cell[0], Hider):
-                                            print('H', end=' ')
-                                        else:
-                                            print('-', end=' ')
-                                    print()
-                if len(announcement_coor):
-                    # there is an announcement, go around this
-                    pass
-            else:
-                # no hider, no announcement
-                res = self.__choose_step_no_info()
-                # for i in res:
-                #     print(i)
-                if res == False:
-                    # give up
-                    print("No cell to go")
-                    return [], False
-                for R, C in res:
-                    self.problem.map_list[r][c].remove( seeker )
-                    seeker.coordinate = (R,C)
-                    visionmap = self.vision_maps.get( (R,C) )
-                    if visionmap == None:
-                        tmp_seeker = Seeker(
-                            coordinate=(R, C)
-                        )
-                        tmp_seeker.origin_map = seeker.origin_map
-                        tmp_seeker.skeleton_map = seeker.skeleton_map
-                        tmp_seeker.vision()
-                        visionmap = deepcopy(tmp_seeker.vision_map)
-                        self.vision_maps[ (idr, idc) ] = visionmap
+                                    print('MOVE TOWARDS HIDER')
+                                    for row in self.problem.map_list:
+                                        for cell in row:
+                                            if -1 in cell:
+                                                print('x', end=' ')
+                                            # if there is a seeker in that cell
+                                            elif seeker in cell:
+                                                print('S', end=' ')
+                                            # if there is a hider in that cell
+                                            elif len(cell) == 1 and isinstance(cell[0], Hider):
+                                                print('H', end=' ')
+                                            else:
+                                                print('-', end=' ')
+                                        print()
+                    if len(announcement_coor):
+                        # there is an announcement, go around this
+                        pass
+                
+                else:
+                    # no hider, no announcement
+                    res = self.__choose_step_no_info()
+                    # for i in res:
+                    #     print(i)
+                    if res == False:
+                        # give up
+                        print("No cell to go")
+                        return [], False
+                    for R, C in res:
+                        self.problem.map_list[r][c].remove( seeker )
+                        seeker.coordinate = (R,C)
+                        visionmap = self.vision_maps.get( (R,C) )
+                        if visionmap == None:
+                            tmp_seeker = Seeker(
+                                coordinate=(R, C)
+                            )
+                            tmp_seeker.origin_map = seeker.origin_map
+                            tmp_seeker.skeleton_map = seeker.skeleton_map
+                            tmp_seeker.vision()
+                            visionmap = deepcopy(tmp_seeker.vision_map)
+                            self.vision_maps[ (idr, idc) ] = visionmap
 
 
-                    # -----------------------------------------------------------------
-                    # print debug
-                    # for row in visionmap:
-                    #     for cell in row:
-                    #         if cell == -1:
-                    #             print('x', end=' ')
-                    #         elif cell == 1000:
-                    #             print('-', end=' ')
-                    #         elif cell:
-                    #             print(1, end=' ')
-                    #         else:
-                    #             print(0, end=' ')
-                    #     print()
-                    # # -----------------------------------------------------------------
+                        # -----------------------------------------------------------------
+                        # print debug
+                        # for row in visionmap:
+                        #     for cell in row:
+                        #         if cell == -1:
+                        #             print('x', end=' ')
+                        #         elif cell == 1000:
+                        #             print('-', end=' ')
+                        #         elif cell:
+                        #             print(1, end=' ')
+                        #         else:
+                        #             print(0, end=' ')
+                        #     print()
+                        # # -----------------------------------------------------------------
 
-                    # after choosing a cell, assign new vision to the seen map
-                    for idr in range(R - seeker.radius, R + seeker.radius + 1, +1):
-                        if idr < 0:
-                            continue
-                        if idr >= len(seeker.vision_map):
-                            break
-                        for idc in range(C - seeker.radius, C + seeker.radius + 1, +1):
-                            if idc < 0:
+                        # after choosing a cell, assign new vision to the seen map
+                        for idr in range(R - seeker.radius, R + seeker.radius + 1, +1):
+                            if idr < 0:
                                 continue
-                            if idc >= len(seeker.vision_map[0]):
+                            if idr >= len(seeker.vision_map):
                                 break
-                            if visionmap[idr][idc] == True:
-                                self.seen_map[idr][idc] = True
-                    if 1000 in self.problem.map_list[R][C]:
-                        self.problem.map_list[R][C] = [ seeker ]
-                        print('append seeker', (R, C))
-                    else:
-                        self.problem.map_list[R][C].append( seeker )
+                            for idc in range(C - seeker.radius, C + seeker.radius + 1, +1):
+                                if idc < 0:
+                                    continue
+                                if idc >= len(seeker.vision_map[0]):
+                                    break
+                                if visionmap[idr][idc] == True:
+                                    self.seen_map[idr][idc] = True
+                        if 1000 in self.problem.map_list[R][C]:
+                            self.problem.map_list[R][C] = [ seeker ]
+                            print('append seeker', (R, C))
+                        else:
+                            self.problem.map_list[R][C].append( seeker )
 
-                    # decrease seeker score for each move
-                    seeker.score -= 1
+                        # decrease seeker score for each move
+                        seeker.score -= 1
 
-                    yield StateForFE(
-                        player=seeker,
-                        old_row=self.moves_stack[-1][0],
-                        old_col=self.moves_stack[-1][1],
-                        new_row=R,
-                        new_col=C,
-                        announcements=[]
-                    )
-                    self.moves_stack.append( (R,C) )  
+                        yield StateForFE(
+                            player=seeker,
+                            old_row=self.moves_stack[-1][0],
+                            old_col=self.moves_stack[-1][1],
+                            new_row=R,
+                            new_col=C,
+                            announcements=[]
+                        )
+                        self.moves_stack.append( (R,C) )  
 
-                    for row in self.problem.map_list:
-                        for cell in row:
-                            if -1 in cell:
-                                print('x', end=' ')
-                            # if there is a seeker in that cell
-                            elif seeker in cell:
-                                print('S', end=' ')
-                            # if there is a hider in that cell
-                            elif len(cell) == 1 and isinstance(cell[0], Hider):
-                                print('H', end=' ')
-                            else:
-                                print('-', end=' ')
-                        print()
+                        for row in self.problem.map_list:
+                            for cell in row:
+                                if -1 in cell:
+                                    print('x', end=' ')
+                                # if there is a seeker in that cell
+                                elif seeker in cell:
+                                    print('S', end=' ')
+                                # if there is a hider in that cell
+                                elif len(cell) == 1 and isinstance(cell[0], Hider):
+                                    print('H', end=' ')
+                                else:
+                                    print('-', end=' ')
+                            print()
 
             #=============================================
             #============================================
@@ -1126,7 +1097,7 @@ class Level2:
 
         self.seen_map = [                       # list of cells which seeker has already seen
             [True if cell == -1 else False for cell in row ] for row in seeker.skeleton_map
-        ]                                            # True / False
+        ]                                       # True / False
         # self.visited_map = deepcopy(self.seen_map)  # list of cells which seeker has already visited
                                                 # True / False
         
@@ -1305,7 +1276,7 @@ class Level2:
                     announcements=self.announcements_on_map
                 )
 # if __name__ == '__main__':
-#     lv2 = Level2('test/map1_1.txt')
+#     lv2 = Level2('test/map1_2.txt')
 #     for state in lv2.run():
 #         if state.player.signature == 'Hider':
 #             # print('Hider\'s turn.')
@@ -1313,7 +1284,8 @@ class Level2:
 #         elif state.player.signature == 'Seeker':
 #             # print('Seeker\'s turn:', end=' ')
 #             print(state.old_coordinate, '-->', state.new_coordinate)
-                
+
+            
 if __name__ == '__main__':
     lv1 = Level1('test/map1_1.txt')
     for state in lv1.run():

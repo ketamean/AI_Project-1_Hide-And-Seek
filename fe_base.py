@@ -10,11 +10,10 @@ PLAYER_SIZE = 20
 PLAYER_TILE_VISIBILITY = 3  # Tiles around player that will be visible
 
 # ----------------MAP STRUCTURES----------------
-prob = problem.Problem(input_filename='test/map1_1.txt', allow_move_obstacles=False)
-MAP_NUM_COL = prob.num_col
-MAP_NUM_ROW = prob.num_row
-SCREEN_WIDTH = MAP_TILE_SIZE * MAP_NUM_COL
-SCREEN_HEIGHT = MAP_TILE_SIZE * MAP_NUM_ROW
+MAP_NUM_COL:int
+MAP_NUM_ROW: int
+SCREEN_WIDTH: int
+SCREEN_HEIGHT: int
 
 
 class Map:
@@ -88,6 +87,33 @@ class Hider:
         if self.tile_col == seeker.tile_col and self.tile_row == seeker.tile_row:
             return True
 
+
+def handle_input(map, seeker) -> None:
+    if rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_DOWN):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
+            seeker.move(PLAYER_SIZE, PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_UP):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
+            seeker.move(PLAYER_SIZE, -PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_DOWN):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
+            seeker.move(-PLAYER_SIZE, PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_UP):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
+            seeker.move(-PLAYER_SIZE, -PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_RIGHT):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
+            seeker.move(PLAYER_SIZE, 0, map)
+    elif rl.is_key_pressed(rl.KEY_LEFT):
+        if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
+            seeker.move(-PLAYER_SIZE, 0, map)
+    elif rl.is_key_pressed(rl.KEY_DOWN):
+        # for going down, a bonus list index out of range check is needed
+        if (seeker.tile_row + 1) < map.tiles_row and map.tileIds[(seeker.tile_row + 1) * map.tiles_col + seeker.tile_col] != 2:
+            seeker.move(0, PLAYER_SIZE, map)
+    elif rl.is_key_pressed(rl.KEY_UP):
+        if map.tileIds[(seeker.tile_row - 1) * map.tiles_col + seeker.tile_col] != 2:
+            seeker.move(0, -PLAYER_SIZE, map)
 def main():
     screenWidth = SCREEN_WIDTH
     screenHeight = SCREEN_HEIGHT
@@ -129,32 +155,7 @@ def main():
         # --------USER CONTROL MOVEMENT (ONLY FOR DEBUGGING) --------
         user_control = True
         if user_control:
-            if rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_DOWN):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
-                    seeker.move(PLAYER_SIZE, PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_RIGHT) and rl.is_key_pressed(rl.KEY_UP):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
-                    seeker.move(PLAYER_SIZE, -PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_DOWN):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
-                    seeker.move(-PLAYER_SIZE, PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_LEFT) and rl.is_key_pressed(rl.KEY_UP):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
-                    seeker.move(-PLAYER_SIZE, -PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_RIGHT):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col + 1] != 2:
-                    seeker.move(PLAYER_SIZE, 0, map)
-            elif rl.is_key_pressed(rl.KEY_LEFT):
-                if map.tileIds[seeker.tile_row * map.tiles_col + seeker.tile_col - 1] != 2:
-                    seeker.move(-PLAYER_SIZE, 0, map)
-            elif rl.is_key_pressed(rl.KEY_DOWN):
-                # for going down, a bonus list index out of range check is needed
-                if (seeker.tile_row + 1) < map.tiles_row and map.tileIds[(seeker.tile_row + 1) * map.tiles_col + seeker.tile_col] != 2 :
-                    seeker.move(0, PLAYER_SIZE, map)
-            elif rl.is_key_pressed(rl.KEY_UP):
-                if map.tileIds[(seeker.tile_row - 1) * map.tiles_col + seeker.tile_col] != 2:
-                    seeker.move(0, -PLAYER_SIZE, map)
-
+            handle_input(map, seeker)
         # --------FILE INPUT MOVEMENT--------
 
         # Previous visited tiles are set to partial fog
@@ -218,5 +219,17 @@ def main():
 
 if __name__ == "__main__":
     # Menu
-    fe_menu.main_menu()
+    val = fe_menu.main_menu()
+    if val == 1:
+        prob = problem.Problem(input_filename='tmap1_1.txt', allow_move_obstacles=False)
+    elif val == 2:
+        pass
+    elif val == 3:
+        pass
+    elif val == 4:
+        pass
+    MAP_NUM_COL = prob.num_col
+    MAP_NUM_ROW = prob.num_row
+    SCREEN_WIDTH = MAP_TILE_SIZE * MAP_NUM_COL
+    SCREEN_HEIGHT = MAP_TILE_SIZE * MAP_NUM_ROW
     main()
