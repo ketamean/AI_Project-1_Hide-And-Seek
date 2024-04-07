@@ -62,7 +62,6 @@ class Player:
     #             f= new_g + new_h
     #         )
     #     )
-
     def __vision_col(self):
         r,c = self.coordinate
         # traverse the left half of the column of player

@@ -5,6 +5,7 @@ from pq import *
 from astar import *
 from queue import PriorityQueue
 from state_for_fe import StateForFE
+import astar
 class Level1:
     announcement = []
     def __init__(self, input_filepath:str) -> None:
@@ -13,6 +14,33 @@ class Level1:
             input_filename=input_filepath,
             allow_move_obstacles=False
         )
+
+    ADJACENT = [
+        (-1,-1),    (-1,0),     (-1,1),
+        (0,-1),                 (0,1),
+        (1,-1),     (1,0),      (1,1)
+    ]
+    @staticmethod
+    def is_adjacent(tile1: tuple, tile2: tuple):
+        """
+            check whether tile 1 adjacent to tile 2
+
+            tiles are given as their coordinate
+        """
+        for dr,dc in Level2.ADJACENT:
+            if tile1[0] + dr == tile2[0] and tile1[1] + dc == tile2[1]:
+                return True
+        return False
+    
+    def move_seeker_to(self, coordinate: tuple):
+        """
+            assign current coordinate to self.last_step
+            remove seeker from old tile
+            add it to the new tile
+            assign new coordinate to the seeker
+
+            no return
+        """
         seeker = self.problem.seeker
         seeker.origin_map = self.problem.map_list
 
@@ -98,11 +126,70 @@ class Level1:
 
     def __choose_step_no_info(self):
         """
-            let seeker take a step when there is no percept of Hider and Announcement
-
-            returns False if end game (no cell to go); otherwise, a list of steps (as coordinates)
+            returns new path to other cell in the region of the announcement that we have not seen;
+            or None if there is no cell
         """
+        seeker = self.problem.seeker
+        cur_r, cur_c = seeker.coordinate
+        ann_radius = self.problem.hiders[0].radius
+        ann_coor = self.current_announcement['coordinate']
+        for idrow in range(ann_coor[0] - ann_radius, ann_coor[0] + ann_radius + 1, +1):
+            # check index validity
+            if idrow < 0:
+                break
+            if idrow >= len(seeker.vision_map):
+                break
+            for idcol in range(ann_coor[1] - ann_radius, ann_coor[1] + ann_radius + 1, +1):
+                # check index validity
+                if idcol < 0:
+                    break
+                if idcol >= len(seeker.vision_map):
+                    break
+                if idrow == cur_r and idcol == cur_c:
+                    continue
+                if self.seen_map[idrow][idcol] == False and self.reachable[idrow][idcol] == True:
+                    # cell in the region of the announcement but we have not seen it yet
+                    path = astar.astar(
+                        grid=self.astar_map,
+                        start_coor=(cur_r, cur_c),
+                        goal_coor=(idrow, idcol)
+                    )
+                    if not path or len(path) == 0:
+                        self.reachable[idrow][idcol] = False
+                    return path
+        return None
+    
+    def __hider_take_turn(self, hider: Hider):
+        """
+            a hider in the list of hiders takes its turn:
+                - increase count to announcement
+                - if needed, raise an announcement and put it onto the map
+
+            id: index of hider in the list of hider in the problem, and it is also ID of the hider
+            returns nothing
+        """
+        hider.count_to_announcement += 1
+        if hider.count_to_announcement == hider.step_to_announcement:
+            if len(self.announcements_on_map) == self.total_hiders:
+                # reset list of current announcements on the map
+                self.announcements_on_map = []
+            hider.count_to_announcement = 0
+            announce = hider.announce()
+            self.announcements_on_map.append( announce )
+            if 1000 in self.problem.map_list[ announce.coordinate[0] ][ announce.coordinate[1] ]:
+                self.problem.map_list[ announce.coordinate[0] ][ announce.coordinate[1] ] = [ announce ]
+            else:
+                self.problem.map_list[ announce.coordinate[0] ][ announce.coordinate[1] ].append( announce )
+
+    def __seeker_blind_step_check_potential_directions(self):
+        """
+            returns 2 things:
+                - LIST of direction (as a coordinate in terms of a tuple) that has maximum number of new and visible cells
+                - the max number of new and visible cells
+        """
+        # avoid steping back to the previous step
         from copy import deepcopy
+        last_r, last_c = self.last_step     # the previous coordinate of the agent
         seeker = self.problem.seeker
         cur_r,cur_c = seeker.coordinate     # current coordinate of the agent
         DIRECTIONS = [
@@ -1272,18 +1359,145 @@ class Level2:
                 seeker_turn = not seeker_turn
                 cur_r, cur_c = seeker.coordinate    # current position of the seeker
 
-                self.__seeker_take_blind_step(seeker)
-# if __name__ == '__main__':
-#     lv2 = Level2('test/map1_2.txt')
-#     for state in lv2.run():
-#         if state.player.signature == 'Hider':
-#             # print('Hider\'s turn.')
-#             pass
-#         elif state.player.signature == 'Seeker':
-#             # print('Seeker\'s turn:', end=' ')
-#             print(state.old_coordinate, '-->', state.new_coordinate)
-
-            
+                # check if seeker is in the same tile with a hider
+                self.__seeker_check_found_hider()
+                # ----------------------------------------
+                # ----------------------------------------
+                # check if all hiders are found
+                if self.total_hiders == 0:
+                    # end game, success
+                    return
+                
+                # check if we reach all the cells
+                flag_reach_all = True
+                for row in self.reachable:
+                    for cell in row:
+                        if cell == None:
+                            flag_reach_all = not flag_reach_all
+                            break
+                    if not flag_reach_all:
+                        break
+                if flag_reach_all:
+                    # reach all
+                    # => end game, failed
+                    return
+                
+                # ----------------------------------------
+                # ----------------------------------------
+                # check appearance of new hiders and announcements around seeker
+                self.__seeker_check_new_hider_and_announcement()
+                # ----------------------------------------
+                # ----------------------------------------
+                # check whether we are on the way to a hider
+                if len(self.seeker_path_to_hider):
+                    # print('choose cell to hider')
+                    R,C = self.__seeker_choose_cell_on_path_to_hider()
+                    self.move_seeker_to( coordinate=(R,C) )
+                    seeker.score -= 1
+                    yield StateForFE(
+                        player=seeker,
+                        old_row=self.last_step[0],
+                        old_col=self.last_step[1],
+                        new_row=R,
+                        new_col=C,
+                        announcements=self.announcements_on_map
+                    )
+                    self.seeker_normal_path = []
+                    continue
+                # ----------------------------------------
+                # ----------------------------------------
+                # check whether we have seen hiders
+                if len(self.visibile_hider_coor):
+                    # print('create path to hider')
+                    self.seeker_path_to_hider = self.__seeker_create_new_path_to_hider()
+                    R,C = self.seeker_path_to_hider.pop(0)
+                    self.move_seeker_to( coordinate=(R,C) )
+                    seeker.score -= 1
+                    yield StateForFE(
+                        player=seeker,
+                        old_row=self.last_step[0],
+                        old_col=self.last_step[1],
+                        new_row=R,
+                        new_col=C,
+                        announcements=self.announcements_on_map
+                    )
+                    self.seeker_normal_path = []
+                    continue
+                # ----------------------------------------
+                # ----------------------------------------
+                # check whether we are on the path to an announcement
+                if len(self.seeker_path_for_announcement):
+                    # print('choose cell to announcement')
+                    R,C = self.__seeker_choose_cell_on_path_for_announcement()
+                    self.move_seeker_to( coordinate=(R,C) )
+                    seeker.score -= 1
+                    yield StateForFE(
+                        player=seeker,
+                        old_row=self.last_step[0],
+                        old_col=self.last_step[1],
+                        new_row=R,
+                        new_col=C,
+                        announcements=self.announcements_on_map
+                    )
+                    self.seeker_normal_path = []
+                    if len(self.seeker_path_for_announcement) == 0:
+                        res = self.__seeker_check_unseen_cell_around_announcement()
+                        if res:
+                            self.seeker_path_for_announcement = res
+                            continue
+                # ----------------------------------------
+                # ----------------------------------------
+                # there are other visible announcements
+                if len(self.visible_announcements):
+                    # print('create path for announcement')
+                    while len(self.visible_announcements):
+                        self.current_announcement = self.visible_announcements.pop(0)
+                        goal = self.__seeker_find_goal_for_path_announcement()
+                        if goal:
+                            if goal == (cur_r, cur_c):
+                                goal = None
+                            elif self.reachable[goal[0]][goal[1]]:
+                                break
+                    if goal:
+                        self.seeker_path_for_announcement = astar.astar(
+                            grid=self.astar_map,
+                            start_coor=(cur_r, cur_c),
+                            goal_coor=goal
+                        )
+                        self.seeker_path_for_announcement
+                        R,C = self.seeker_path_for_announcement.pop(0)
+                        self.move_seeker_to( coordinate=(R,C) )
+                        seeker.score -= 1
+                        yield StateForFE(
+                            player=seeker,
+                            old_row=self.last_step[0],
+                            old_col=self.last_step[1],
+                            new_row=R,
+                            new_col=C,
+                            announcements=self.announcements_on_map
+                        )
+                        self.seeker_normal_path = []
+                        continue
+                # ----------------------------------------
+                # ----------------------------------------
+                # blind step
+                if len(self.seeker_normal_path) == 0:
+                    # print('create normal path')
+                    self.seeker_normal_path = self.__seeker_blind_step()
+                    if self.seeker_normal_path == None:
+                        print('give up')
+                        return
+                R,C = self.seeker_normal_path.pop( 0 )
+                self.move_seeker_to( coordinate=(R,C) )
+                seeker.score -= 1
+                yield StateForFE(
+                    player=seeker,
+                    old_row=self.last_step[0],
+                    old_col=self.last_step[1],
+                    new_row=R,
+                    new_col=C,
+                    announcements=self.announcements_on_map
+                )
 if __name__ == '__main__':
     lv1 = Level1('test/map1_1.txt')
     for state in lv1.run():

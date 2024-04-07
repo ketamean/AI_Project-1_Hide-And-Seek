@@ -92,8 +92,6 @@ class Problem:
         """
             map_list: 2d array as the map. -1s represent walls, a unique Seeker object, possibly multiple (can be 1 or more) Hider objects
         """
-        self.seeker = None  # the unique Seeker object
-        self.hiders = []    # list of Hider objects
         with open(input_filename, 'r') as f:
             buffer = f.read()
 
@@ -114,7 +112,7 @@ class Problem:
                 for i in range(obstacle.id_row_topleft, obstacle.id_row_botright + 1):
                     for j in range(obstacle.id_col_topleft, obstacle.id_col_botright + 1):
                         self.map_list[i][j] = [-1]
-        self.skelaton_map = []
+        self.skeleton_map = []
         for row in self.map_list:
             tmp_row = []
             for cell in row:
@@ -122,26 +120,29 @@ class Problem:
                     tmp_row.append(-1)
                 else:
                     tmp_row.append(1000)
-            self.skelaton_map.append( tmp_row )
+            self.skeleton_map.append( tmp_row )
         from copy import deepcopy
         
         # now the map is static
         # assign Hider and Seeker objects to the map
         _r,_c = self.seeker_coor
-        self.seeker = Seeker(coordinate=(_r,_c))
+        self.seeker = Seeker(coordinate=(_r,_c))            # the unique seeker object
         self.seeker.origin_map = self.map_list
-        self.seeker.vision_map = deepcopy(self.skelaton_map)
-        self.seeker.heuristic_map = deepcopy(self.skelaton_map)
-        self.seeker.skelaton_map = deepcopy(self.skelaton_map)
+        self.seeker.vision_map = deepcopy(self.skeleton_map)
+        self.seeker.heuristic_map = deepcopy(self.skeleton_map)
+        self.seeker.skeleton_map = deepcopy(self.skeleton_map)
         self.map_list[_r][_c] = [self.seeker]
+
+        Hider.reset_id_counter()
+        self.hiders = []    # list of Hider objects
         for (r,c) in self.hiders_coor:
             hider = Hider(coordinate=(r,c))
-            hider.vision_map = deepcopy(self.skelaton_map)
-            hider.heuristic_map = deepcopy(self.skelaton_map)
-            hider.skelaton_map = deepcopy(self.skelaton_map)
+            hider.vision_map = deepcopy(self.skeleton_map)
+            hider.heuristic_map = deepcopy(self.skeleton_map)
+            hider.skeleton_map = deepcopy(self.skeleton_map)
             hider.origin_map = self.map_list
             self.hiders.append( hider )
-            self.map_list[r][c] = [hider]
+            self.map_list[r][c] = [ hider ]
         
         del self.seeker_coor
         del self.hiders_coor
