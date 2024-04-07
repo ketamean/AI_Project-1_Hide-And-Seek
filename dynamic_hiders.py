@@ -164,7 +164,6 @@ class Level3:
                     if (i, j) not in self.seeker_seen_cells:
                         path = astar(goal_coor=(i, j),grid=self.grid_for_astar, start_coor=seeker.coordinate)
                         if path is not None:
-                            # TODO: Continue from here, implement going with path
                             self.path_to_cell = path
                             pass
         else:
@@ -258,7 +257,9 @@ class Level3:
     def run(self) -> list:
         time_count = 0
         all_states = []
-        while time_count < 10:
+        while time_count < 100:
+            if len(self.problem.hiders) == 0:
+                self.is_concede = True
             time_count += 1
             if time_count % 5 == 0:
                 self.hiders_announce()

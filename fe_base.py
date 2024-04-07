@@ -118,7 +118,7 @@ class Hider:
         self.tile_row = row
 
     def draw(self, if_found):
-        rl.draw_rectangle_v(self.position, rl.Vector2(PLAYER_SIZE, PLAYER_SIZE), rl.ORANGE if if_found else rl.GREEN)
+        rl.draw_rectangle_v(self.position, rl.Vector2(PLAYER_SIZE, PLAYER_SIZE), rl.GREEN)
     
     def if_found(self, seeker):
         if self.tile_col == seeker.tile_col and self.tile_row == seeker.tile_row:
@@ -177,15 +177,13 @@ def main():
                 map.tileIds[i * prob.num_col + j] = 2
             elif type(prob.map_list[i][j][0]) == player.Seeker:
                 seeker = Seeker(i, j)
-            elif type(prob.map_list[i][j][0]) == player.Hider:
-                hiders.append(Hider(i, j))
 
     # Seeker position in the map (default tile: 0,0)
     # Create a render texture to store the fog of war
     fogOfWar = rl.load_render_texture(map.tiles_col, map.tiles_row)
     rl.set_texture_filter(fogOfWar.texture, rl.TEXTURE_FILTER_BILINEAR)
     rl.set_target_fps(30)
-    timer.start_timer(life_time=1)
+    timer.start_timer(life_time=0.1)
     while not rl.window_should_close():
         # --------USER CONTROL MOVEMENT (ONLY FOR DEBUGGING) --------
         user_control = False
@@ -195,7 +193,10 @@ def main():
         if len(game) and timer.is_timer_done():
             state: state_for_fe.StateForFE = game.pop(0)
             seeker.set_location(row=state.seeker.coordinate[0], col=state.seeker.coordinate[1], my_map=map)
-            timer.start_timer(life_time=1)
+            hiders.clear()
+            for hider in state.hiders:
+                hiders.append(Hider(hider.coordinate[0], hider.coordinate[1]))
+            timer.start_timer(life_time=0.1)
         # Previous visited tiles are set to partial fog
         for i in range(map.tiles_row * map.tiles_col):
             if map.tileFog[i] == 1:
@@ -238,10 +239,7 @@ def main():
 
         # Check if hider is found
         for hider in hiders:
-            if hider.if_found(seeker):
-                hider.draw(True)
-            else:
-                hider.draw(False)
+            hider.draw(True)
         
         if user_control:
             rl.draw_text("ARROW KEYS to move", 10, screenHeight - 25, 20, rl.RAYWHITE)
