@@ -181,7 +181,7 @@ class Level3:
                 new_cell = None
                 for _cell in cells_chosen:
                     if _cell[1] == mx_new_seen:
-                        new_cell = _cell
+                        new_cell = _cell[0]
                         break
                 self.problem.map_list[seeker.coordinate[0]][seeker.coordinate[1]].remove(seeker)
                 seeker.coordinate = new_cell
@@ -255,17 +255,24 @@ class Level3:
         self.path_to_cell = None
         for hider in hiders:
             self.announcement.append(self.hider_random_announcement(hider))
-        print(self.announcement)
     def run(self) -> list:
         time_count = 0
-        while time_count < 1:
+        all_states = []
+        while time_count < 10:
             time_count += 1
             if time_count % 5 == 0:
                 self.hiders_announce()
             self.seeker_moves()
             self.hiders_move()
+            self.score -= 1
+            curren_state = sff.StateForFE(seeker=self.problem.seeker, hiders=self.problem.hiders, score=self.score, announcements=self.announcement, is_end=False)
             if self.is_concede:
-                print("Seeker concede")
+                curren_state.is_end = True
+            all_states.append(curren_state)
+            if self.is_concede:
+                break
+        return all_states
+
 
 
 
